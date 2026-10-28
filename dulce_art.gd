@@ -69,6 +69,16 @@ static func soft_particle_texture() -> GradientTexture2D:
 	return texture
 
 
+## Unlit and vertex-coloured, for lanterns and lit windows that should stay
+## bright at night without a light of their own.
+static func glow_material() -> StandardMaterial3D:
+	var finish := StandardMaterial3D.new()
+	finish.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	finish.vertex_color_use_as_albedo = true
+	finish.vertex_color_is_srgb = true
+	return finish
+
+
 ## Unlit and alpha-blended, for the blob shadow and other flat helpers that
 ## must read the same in daylight and at night.
 static func flat_material(color: Color) -> StandardMaterial3D:

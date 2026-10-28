@@ -29,6 +29,10 @@ func _run() -> void:
 	_test_falls_out_of_the_world()
 	_test_clear_before()
 	_test_profiles()
+	_test_squirrel()
+	_test_robo_vac()
+	_test_seagull()
+	_test_hot_sauce()
 	_finish()
 
 
@@ -37,9 +41,9 @@ func _grid(rows: Array[String]) -> Grid:
 
 
 ## Steps every pest for `seconds`, with Dulce standing at `dulce_x`.
-func _step(pests: Pests, grid: Grid, seconds: float, dulce_x := 0.0) -> void:
+func _step(pests: Pests, grid: Grid, seconds: float, dulce_x := 0.0, dulce_y := FLOOR_Y) -> void:
 	for _tick in roundi(seconds / STEP):
-		pests.step(grid, dulce_x, STEP)
+		pests.step(grid, Vector2(dulce_x, dulce_y), STEP)
 
 
 ## A pigeon on a six-tile island patrols it and never walks off.
@@ -53,7 +57,7 @@ func _test_pigeon_turns_at_edges() -> void:
 	var turns := 0
 	var facing: int = pigeon["facing"]
 	for _tick in roundi(12.0 / STEP):
-		pests.step(grid, 6.5 * TILE, STEP)
+		pests.step(grid, Vector2(6.5 * TILE, FLOOR_Y), STEP)
 		lowest = minf(lowest, pigeon["position"].x)
 		highest = maxf(highest, pigeon["position"].x)
 		if pigeon["facing"] != facing:
@@ -156,6 +160,133 @@ func _test_profiles() -> void:
 		var size: Vector2 = Pests.PROFILES[kind]["size"]
 		_expect(size.x < TILE and size.y < TILE,
 			"%s fits inside one tile, so the chunk validator's tile maths holds." % kind)
+	var shapes := {}
+	for kind: String in Pests.PROFILES:
+		var size: Vector2 = Pests.PROFILES[kind]["size"]
+		_expect(not shapes.has(size), "%s has a silhouette of its own." % kind)
+		shapes[size] = true
+
+
+## Waits, then charges once she is within six tiles; hops a two-tile gap,
+## stops at a wider one.
+func _test_squirrel() -> void:
+	var rows: Array[String] = ["", "", "", "", "######..######....######", "######..######....######"]
+	var grid := _grid(rows)
+	var pests := Pests.new()
+	var squirrel := pests.add(Pests.SQUIRREL, Vector2(12.5 * TILE, FLOOR_Y))
+	_step(pests, grid, 1.0, 22.5 * TILE)
+	_expect(squirrel["state"] == "walk" and squirrel["position"].x == 12.5 * TILE,
+		"A squirrel waits while she is more than six tiles off.")
+	_step(pests, grid, 1.5, 7.5 * TILE)
+	_expect(squirrel["state"] == "charge", "Once she is within six tiles it charges.")
+	_step(pests, grid, 2.0, 1.5 * TILE)
+	_expect(squirrel["alive"] and squirrel["position"].x < 6.0 * TILE,
+		"It hops the two-tile gap to reach her side.")
+	var cautious := pests.add(Pests.SQUIRREL, Vector2(21.5 * TILE, FLOOR_Y))
+	_step(pests, grid, 3.0, 15.5 * TILE)
+	_expect(cautious["alive"] and cautious["position"].x > 18.0 * TILE,
+		"It will not try a four-tile gap; it waits at the edge.")
+
+
+func _test_robo_vac() -> void:
+	var rows: Array[String] = ["", "", "", "#.................#", "###################", "###################"]
+	var grid := _grid(rows)
+	var pests := Pests.new()
+	var vac := pests.add(Pests.ROBO_VAC, Vector2(9.5 * TILE, FLOOR_Y))
+	var start: float = vac["position"].x
+	_step(pests, grid, 1.0, 9.5 * TILE)
+	_expect(absf(vac["position"].x - start) <= Pests.PROFILES[Pests.ROBO_VAC]["speed"] * 1.01,
+		"A robo-vac trundles slowly.")
+	_expect(not pests.stomp(vac) and vac["alive"] and vac["state"] == "flipped",
+		"A stomp flips it onto its back instead of defeating it.")
+	_expect(pests.is_harmless(vac), "A flipped robo-vac is harmless.")
+	var pigeon := pests.add(Pests.PIGEON, Vector2(15.5 * TILE, FLOOR_Y))
+	pests.kick(vac, 1)
+	_step(pests, grid, 0.05, 9.5 * TILE)
+	_expect(vac["state"] == "sliding" and vac["velocity"].x == Pests.VAC_SLIDE_SPEED,
+		"A kick sends it sliding fast.")
+	_expect(pests.is_harmless(vac), "...and it can't bite the dog who kicked it straight away.")
+	_step(pests, grid, 1.2, 9.5 * TILE)
+	var bonks := pests.take_events().filter(func(event: Dictionary) -> bool:
+		return event["kind"] == "bonk")
+	_expect(not pigeon["alive"] and bonks.size() == 1, "A sliding vac bonks the pigeon in its way.")
+	_expect(int(vac["facing"]) == -1, "It bounces off the wall at the end.")
+	_expect(not pests.is_harmless(vac), "A sliding vac is dangerous again once the kick is past.")
+	pests.stomp(vac)
+	_step(pests, grid, Pests.VAC_RECOVER_SECONDS + 0.1, 9.5 * TILE)
+	_expect(vac["state"] == "walk", "Left alone, a flipped vac rights itself.")
+	var pit_rows: Array[String] = ["", "", "", "", "######...", "######..."]
+	var pit := _grid(pit_rows)
+	var faller := Pests.new()
+	var sliding := faller.add(Pests.ROBO_VAC, Vector2(3.5 * TILE, FLOOR_Y))
+	faller.stomp(sliding)
+	faller.kick(sliding, 1)
+	_step(faller, pit, 3.0, 3.5 * TILE)
+	_expect(faller.list.is_empty(), "A sliding vac off a ledge falls out of the run.")
+
+
+## Patrols on a bob without falling, swoops when she passes under, and never
+## dives into the ground or far below its perch.
+func _test_seagull() -> void:
+	var rows: Array[String] = ["", "", "", "", "#".repeat(30), "#".repeat(30)]
+	var grid := _grid(rows)
+	var pests := Pests.new()
+	var home := Vector2(10.5 * TILE, 1.0 * TILE)
+	var gull := pests.add(Pests.SEAGULL, home)
+	var lowest := -INF
+	var furthest := 0.0
+	for _tick in roundi(4.0 / STEP):
+		pests.step(grid, Vector2(25.5 * TILE, FLOOR_Y), STEP)
+		lowest = maxf(lowest, gull["position"].y)
+		furthest = maxf(furthest, absf(gull["position"].x - home.x))
+	_expect(lowest < home.y + 10.0, "A seagull never falls; it bobs around its perch.")
+	_expect(furthest <= Pests.GULL_PATROL + 2.0 and furthest > Grid.TILE,
+		"It patrols up to three tiles either side (%.0f)." % furthest)
+	var deepest := -INF
+	var swooped := false
+	for _tick in roundi(3.0 / STEP):
+		pests.step(grid, Vector2(gull["position"].x, FLOOR_Y), STEP)
+		swooped = swooped or gull["state"] == "swoop"
+		deepest = maxf(deepest, gull["position"].y)
+	_expect(swooped, "It swoops when she runs underneath.")
+	_expect(deepest <= FLOOR_Y - Pests.GULL_CLEARANCE + 0.5
+		and deepest <= home.y + Pests.GULL_DIVE_LIMIT + 0.5,
+		"A swoop never reaches the ground or more than four tiles below home (%.0f)." % deepest)
+	pests.step(grid, Vector2(25.5 * TILE, FLOOR_Y), STEP)
+	for _tick in roundi(3.0 / STEP):
+		pests.step(grid, Vector2(25.5 * TILE, FLOOR_Y), STEP)
+	_expect(absf(gull["position"].y - home.y) < 8.0, "Then it climbs back to its perch.")
+
+
+func _test_hot_sauce() -> void:
+	var rows: Array[String] = ["", "", "", "", "#".repeat(30), "#".repeat(30)]
+	var grid := _grid(rows)
+	var pests := Pests.new()
+	var bottle := pests.add(Pests.HOT_SAUCE, Vector2(12.5 * TILE, FLOOR_Y))
+	var highest := FLOOR_Y
+	for _tick in roundi(2.0 / STEP):
+		pests.step(grid, Vector2(28.5 * TILE, FLOOR_Y), STEP)
+		highest = minf(highest, bottle["position"].y)
+	_expect(highest < FLOOR_Y - 10.0 and bottle["position"].x == 12.5 * TILE,
+		"A hot-sauce bottle hops in place.")
+	_expect(pests.take_events().is_empty(), "Out of range, it never spits.")
+	var spits := []
+	for _tick in roundi(Pests.SAUCE_SPIT_SECONDS / STEP):
+		pests.step(grid, Vector2(7.5 * TILE, FLOOR_Y), STEP)
+		spits = pests.take_events().filter(func(event: Dictionary) -> bool:
+			return event["kind"] == "spit")
+		if not spits.is_empty():
+			break
+	_expect(spits.size() >= 1, "In range, it spits.")
+	var drops := pests.list.filter(func(pest: Dictionary) -> bool:
+		return pest["kind"] == Pests.SAUCE_DROP and pest["alive"])
+	_expect(not drops.is_empty() and drops[0]["velocity"].x < 0.0, "The drop flies toward her.")
+	_expect(pests.alive_count() == 1, "Drops are not pests to count or stomp.")
+	_step(pests, grid, 1.5, 7.5 * TILE)
+	var flying := pests.list.filter(func(pest: Dictionary) -> bool:
+		return pest["kind"] == Pests.SAUCE_DROP and pest["alive"])
+	_expect(flying.is_empty() and drops[0]["exit"] == Pests.SPLAT, "A drop splats on the ground.")
+	_expect(not Pests.stompable(drops[0]), "A drop can't be stomped: touching it is a hit.")
 
 
 func _expect(condition: bool, message: String) -> void:

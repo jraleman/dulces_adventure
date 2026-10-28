@@ -3,7 +3,8 @@ extends Control
 ## An isolated Compatibility 3D viewport that draws the run under the 2D shell.
 ##
 ## Read-only: it presents `run_state.gd` (its tiles, food, Lunchboxes, pests
-## and Dulce) and reports where the camera's left edge is, so the model can
+## and Dulce) dressed in each chunk's biome, with a parallax backdrop and the
+## biome's sky, and reports where the camera's left edge is, so the model can
 ## stop her walking past it. The camera only ever scrolls forward (DESIGN §4.7).
 
 const Art = preload("res://games/dulces_adventure/dulce_art.gd")
@@ -17,6 +18,7 @@ const Pests = preload("res://games/dulces_adventure/pests.gd")
 const FoodModels = preload("res://games/dulces_adventure/world/food_models.gd")
 const PestModels = preload("res://games/dulces_adventure/world/pest_models.gd")
 const PawParticles = preload("res://games/dulces_adventure/world/paw_particles.gd")
+const BiomeProps = preload("res://games/dulces_adventure/world/biome_props.gd")
 
 ## How much of the run fits on screen, in tiles, before the aspect decides.
 const VISIBLE_TILES_WIDE := 18.0
@@ -47,6 +49,11 @@ const DUST := Color(0.82, 0.72, 0.58, 0.7)
 const FEATHERS := Color(0.93, 0.93, 0.95, 0.9)
 ## The pigeon's waddle, a decoration reduced motion parks.
 const WADDLE_HZ := 2.2
+## A sliding robo-vac spins like a kicked shell; a scurrying squirrel bolts.
+const VAC_SPIN := 14.0
+const SCURRY_METRES := 2.5
+## Backdrop tiles recycled as the camera moves.
+const BACKDROP_POOL := 4
 
 var state: State
 var reduced_motion := false
@@ -60,11 +67,17 @@ var world: Node3D
 var dulce: DulceModel
 var particles: PawParticles
 var daylight: Daylight
-## One baked terrain surface per live chunk, by the chunk's first column, so
-## placing a chunk or opening a Lunchbox re-bakes one chunk, not the run.
-var _chunk_meshes: Dictionary[int, MeshInstance3D] = {}
-## `Vector2i(first column, width)` of every live chunk.
-var _chunk_ranges: Array[Vector2i] = []
+## One baked chunk (terrain, props and glow) per live chunk, by its first
+## column, so placing a chunk or opening a Lunchbox re-bakes one chunk.
+var _chunk_meshes: Dictionary[int, Node3D] = {}
+## Every live chunk: `{column, width, biome, gate}`.
+var _chunks: Array[Dictionary] = []
+var _glow: StandardMaterial3D
+var _backdrop: Node3D
+var _backdrop_tiles: Array[Node3D] = []
+var _backdrop_meshes: Dictionary[int, Dictionary] = {}
+var _far_ground: MeshInstance3D
+var _far_ground_finish: StandardMaterial3D
 ## Pixels at the bottom of this control covered by touch buttons.
 var bottom_inset := 0.0
 var _finish: StandardMaterial3D
@@ -98,6 +111,31 @@ func _ready() -> void:
 	world_viewport.add_child(world)
 	daylight = Daylight.new(world)
 	_finish = Art.material()
+	_glow = Art.glow_material()
+	_backdrop = Node3D.new()
+	_backdrop.name = "Backdrop"
+	_backdrop.scale = Vector3.ONE * BiomeProps.BACKDROP_SCALE
+	world.add_child(_backdrop)
+	_far_ground = MeshInstance3D.new()
+	_far_ground.name = "FarGround"
+	var strip := BoxMesh.new()
+	strip.size = Vector3(400.0, 0.1, -BiomeProps.BACKDROP_DEPTH - 1.6)
+	_far_ground.mesh = strip
+	_far_ground_finish = StandardMaterial3D.new()
+	_far_ground.material_override = _far_ground_finish
+	_far_ground.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	world.add_child(_far_ground)
+	for index in BACKDROP_POOL:
+		var tile := Node3D.new()
+		tile.name = "Tile%d" % index
+		for layer: String in ["Lit", "Glow"]:
+			var part := MeshInstance3D.new()
+			part.name = layer
+			part.material_override = _finish if layer == "Lit" else _glow
+			part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			tile.add_child(part)
+		_backdrop.add_child(tile)
+		_backdrop_tiles.append(tile)
 	dulce = DulceModel.new()
 	world.add_child(dulce)
 	particles = PawParticles.new()
@@ -133,15 +171,15 @@ func _ready() -> void:
 	resized.connect(_resize_world)
 	_resize_world()
 	if state != null:
-		if _chunk_ranges.is_empty():
-			_chunk_ranges = _whole_grid()
+		if _chunks.is_empty():
+			_chunks = _whole_grid()
 		rebuild_terrain()
 
 
 ## Points the view at a run, and snaps the camera to it on the next frame.
-## `chunks` are the live chunks as `Vector2i(first column, width)`; without
-## them the whole grid is baked as one stretch.
-func configure(run: State, chunks: Array[Vector2i] = []) -> void:
+## `chunks` are the live chunks as `{column, width, biome, gate}`; without
+## them the whole grid is baked as one Backyard stretch.
+func configure(run: State, chunks: Array[Dictionary] = []) -> void:
 	var fresh := run != state
 	state = run
 	_camera_ready = false
@@ -153,26 +191,27 @@ func configure(run: State, chunks: Array[Vector2i] = []) -> void:
 		_items.clear()
 		_pests.clear()
 		_chunk_meshes.clear()
-		_chunk_ranges.clear()
+		_chunks.clear()
 	if fresh:
-		_chunk_ranges = chunks.duplicate() if not chunks.is_empty() else _whole_grid()
+		_chunks = chunks.duplicate() if not chunks.is_empty() else _whole_grid()
 	if is_inside_tree():
 		# A respawn re-frames the same run; only a new run needs re-baking.
 		if fresh:
 			rebuild_terrain()
+			daylight.set_palette(BiomeProps.palette(state.biome)["sky"], true)
 		present(0.0)
 
 
 ## Matches the baked chunks to the live ones: new chunks are baked, freed ones
 ## dropped, and the rest left alone.
-func sync_chunks(chunks: Array[Vector2i]) -> void:
-	_chunk_ranges = chunks.duplicate()
+func sync_chunks(chunks: Array[Dictionary]) -> void:
+	_chunks = chunks.duplicate()
 	if world == null or state == null:
 		return
 	var live := {}
-	for chunk in _chunk_ranges:
-		live[chunk.x] = true
-		if not _chunk_meshes.has(chunk.x):
+	for chunk in _chunks:
+		live[int(chunk["column"])] = true
+		if not _chunk_meshes.has(int(chunk["column"])):
 			_bake(chunk)
 	for column: int in _chunk_meshes.keys():
 		if not live.has(column):
@@ -182,52 +221,78 @@ func sync_chunks(chunks: Array[Vector2i]) -> void:
 
 ## Re-bakes the chunk holding `column`, as when a Lunchbox there is opened.
 func rebuild_chunk_at(column: int) -> void:
-	for chunk in _chunk_ranges:
-		if column >= chunk.x and column < chunk.x + chunk.y:
-			_bake(chunk)
-			return
+	var chunk := _chunk_at(column)
+	if not chunk.is_empty():
+		_bake(chunk)
+
+
+func _chunk_at(column: int) -> Dictionary:
+	for chunk in _chunks:
+		if column >= int(chunk["column"]) and column < int(chunk["column"]) + int(chunk["width"]):
+			return chunk
+	return {}
 
 
 ## Re-bakes every live chunk.
 func rebuild_terrain() -> void:
 	if world == null or state == null:
 		return
-	for node: MeshInstance3D in _chunk_meshes.values():
+	for node: Node3D in _chunk_meshes.values():
 		node.queue_free()
 	_chunk_meshes.clear()
-	sync_chunks(_chunk_ranges)
+	sync_chunks(_chunks)
 
 
-func _bake(chunk: Vector2i) -> void:
-	var node: MeshInstance3D = _chunk_meshes.get(chunk.x)
-	if node == null:
-		node = MeshInstance3D.new()
-		node.name = "Chunk_%d" % chunk.x
-		node.material_override = _finish
-		world.add_child(node)
-		_chunk_meshes[chunk.x] = node
-	node.mesh = terrain_mesh(state.grid, chunk.x, chunk.y)
+## Terrain, props and glow for one chunk, each a single surface.
+func _bake(chunk: Dictionary) -> void:
+	var column := int(chunk["column"])
+	var holder: Node3D = _chunk_meshes.get(column)
+	if holder == null:
+		holder = Node3D.new()
+		holder.name = "Chunk_%d" % column
+		for layer: String in ["Terrain", "Props", "Glow"]:
+			var part := MeshInstance3D.new()
+			part.name = layer
+			part.material_override = _glow if layer == "Glow" else _finish
+			if layer == "Glow":
+				part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			holder.add_child(part)
+		world.add_child(holder)
+		_chunk_meshes[column] = holder
+	var biome := int(chunk.get("biome", ChunkLibrary.Biome.BACKYARD))
+	var width := int(chunk["width"])
+	(holder.get_node("Terrain") as MeshInstance3D).mesh = terrain_mesh(state.grid, column, width, biome)
+	var props := BiomeProps.props(state.grid, biome, column, width, bool(chunk.get("gate", false)))
+	(holder.get_node("Props") as MeshInstance3D).mesh = props["lit"]
+	(holder.get_node("Glow") as MeshInstance3D).mesh = props["glow"]
 
 
-func _whole_grid() -> Array[Vector2i]:
+func _whole_grid() -> Array[Dictionary]:
 	var columns := Vector2i(1 << 30, -(1 << 30))
 	for cell in state.grid.cells():
 		columns = Vector2i(mini(columns.x, cell.x), maxi(columns.y, cell.x))
 	if columns.y < columns.x:
 		return []
-	return [Vector2i(columns.x, columns.y - columns.x + 1)]
+	return [{
+		"column": columns.x, "width": columns.y - columns.x + 1,
+		"biome": state.biome, "gate": false,
+	}]
 
 
-## One surface for `width` columns from `first`: soil in a checker so distance
-## reads, a grass cap on every exposed top, and thin planks for one-way
-## platforms. A dark back wall below the seam makes every pit read as a hole.
-static func terrain_mesh(grid: Grid, first: int, width: int) -> ArrayMesh:
+## One surface for `width` columns from `first`, in `biome`'s colours: soil in
+## a checker so distance reads, a cap on every exposed top, and thin planks for
+## one-way platforms. A back wall below the seam, in the biome's pit colour
+## (earth, pond, manhole, sea), makes every pit read as a hole.
+static func terrain_mesh(
+	grid: Grid, first: int, width: int, biome: int = ChunkLibrary.Biome.BACKYARD
+) -> ArrayMesh:
+	var colours := BiomeProps.palette(biome)
 	var mesh := MeshBuilder.new()
 	var cell_size := Grid.TILE * Art.WORLD_SCALE
 	var depth := (grid.bottom_row + 1 - ChunkLibrary.SEAM_ROW + BEDROCK_TILES) * cell_size
 	var corner := Art.world_point(Vector2(first, ChunkLibrary.SEAM_ROW) * Grid.TILE)
 	mesh.box(corner + Vector3(width * cell_size * 0.5, -depth * 0.5, -Art.GROUND_DEPTH * 0.5 - 0.05),
-		Vector3(width * cell_size, depth, 0.1), Art.PIT)
+		Vector3(width * cell_size, depth, 0.1), colours["pit"])
 	var cells: Array[Vector2i] = []
 	for column in range(first, first + width):
 		for row in grid.bottom_row + 1:
@@ -238,22 +303,22 @@ static func terrain_mesh(grid: Grid, first: int, width: int) -> ArrayMesh:
 		var kind := grid.tile(cell)
 		if kind == Grid.ONE_WAY:
 			var top := centre + Vector3(0, cell_size * 0.5 - 0.08, 0)
-			mesh.box(top, Vector3(cell_size, 0.16, Art.GROUND_DEPTH * 0.6), Art.PLANK)
+			mesh.box(top, Vector3(cell_size, 0.16, Art.GROUND_DEPTH * 0.6), colours["plank"])
 			continue
 		if kind == Grid.LUNCHBOX or kind == Grid.EMPTY_BOX:
 			FoodModels.lunchbox(mesh, centre, cell_size * 0.92, kind == Grid.EMPTY_BOX)
 			continue
-		var soil := Art.SOIL if (cell.x + cell.y) % 2 == 0 else Art.SOIL_DARK
+		var soil: Color = colours["soil"] if (cell.x + cell.y) % 2 == 0 else colours["soil_dark"]
 		mesh.box(centre, Vector3(cell_size, cell_size, Art.GROUND_DEPTH), soil)
 		if cell.y == grid.bottom_row:
 			# The ground carries on below the frame, so a pit reads as a hole
 			# rather than a gap onto sky.
 			var bedrock := BEDROCK_TILES * cell_size
 			mesh.box(centre - Vector3(0, (cell_size + bedrock) * 0.5, 0),
-				Vector3(cell_size, bedrock, Art.GROUND_DEPTH), Art.SOIL_DARK)
+				Vector3(cell_size, bedrock, Art.GROUND_DEPTH), colours["soil_dark"])
 		if not grid.is_solid(cell + Vector2i.UP):
 			var cap := centre + Vector3(0, cell_size * 0.5 + 0.04, 0)
-			mesh.box(cap, Vector3(cell_size, 0.12, Art.GROUND_DEPTH + 0.04), Art.LETTUCE)
+			mesh.box(cap, Vector3(cell_size, 0.12, Art.GROUND_DEPTH + 0.04), colours["top"])
 	return mesh.finish()
 
 
@@ -274,7 +339,10 @@ func present(delta: float) -> void:
 	_present_pests()
 	_present_shadow()
 	_present_camera(moving_delta)
+	_present_backdrop()
 	var light_time := state.elapsed if day_night_enabled and not reduced_motion else 0.0
+	daylight.set_palette(BiomeProps.palette(state.biome)["sky"], reduced_motion)
+	daylight.advance(moving_delta)
 	daylight.set_elapsed(light_time)
 
 
@@ -334,7 +402,9 @@ func _present_items() -> void:
 		if not _items.has(cell):
 			var food := MeshInstance3D.new()
 			food.name = "%s_%d_%d" % [state.items[cell], cell.x, cell.y]
-			food.mesh = FoodModels.mesh_for(state.items[cell])
+			var chunk := _chunk_at(cell.x)
+			food.mesh = FoodModels.mesh_for(state.items[cell],
+				int(chunk.get("biome", ChunkLibrary.Biome.BACKYARD)))
 			food.material_override = _finish
 			food.position = Art.world_point((Vector2(cell) + Vector2(0.5, 0.5)) * Grid.TILE)
 			world.add_child(food)
@@ -358,24 +428,74 @@ func _present_pests() -> void:
 			_pests[id] = body
 		var node := _pests[id]
 		node.position = Art.world_point(pest["position"])
-		node.rotation.y = 0.0 if int(pest["facing"]) > 0 else PI
-		node.rotation.z = 0.0
-		if pest["kind"] == Pests.PIGEON and pest["active"] and pest["alive"] \
-				and not reduced_motion:
-			var step := sin(state.elapsed * TAU * WADDLE_HZ + id)
-			node.rotation.z = step * 0.14
-			node.position.y += absf(step) * 0.025
+		node.rotation = Vector3(0.0, 0.0 if int(pest["facing"]) > 0 else PI, 0.0)
+		node.scale = Vector3.ONE
+		node.visible = true
 		if pest["alive"]:
-			node.visible = true
-			node.scale = Vector3.ONE
+			_pose_pest(node, pest, id)
 		else:
-			var left := float(pest["poof"]) / Pests.POOF_SECONDS
-			node.visible = not reduced_motion and left > 0.0
-			node.scale = Vector3(1.0 + (1.0 - left) * 0.4, left, 1.0 + (1.0 - left) * 0.4)
+			_pose_exit(node, pest)
 	for id: int in _pests.keys():
 		if not live.has(id):
 			_pests[id].queue_free()
 			_pests.erase(id)
+
+
+## Each pest's living pose: the pigeon's waddle, a robo-vac on its back or
+## spinning across the ground. Decoration parks under reduced motion; a vac's
+## flip does not, because it says the vac is safe to touch.
+func _pose_pest(node: MeshInstance3D, pest: Dictionary, id: int) -> void:
+	match str(pest["kind"]):
+		Pests.PIGEON:
+			if pest["active"] and not reduced_motion:
+				var step := sin(state.elapsed * TAU * WADDLE_HZ + id)
+				node.rotation.z = step * 0.14
+				node.position.y += absf(step) * 0.025
+		Pests.ROBO_VAC:
+			if pest["state"] != "walk":
+				node.rotation.x = PI
+				node.position.y += 0.2
+				if pest["state"] == "sliding" and not reduced_motion:
+					node.rotation.y = state.elapsed * VAC_SPIN
+
+
+## How a stomped pest leaves: a puff that squashes away, a squirrel bolting
+## off-screen, a bottle's lid popping. Reduced motion just removes it.
+func _pose_exit(node: MeshInstance3D, pest: Dictionary) -> void:
+	var left := float(pest["poof"]) / Pests.POOF_SECONDS
+	node.visible = not reduced_motion and left > 0.0
+	match str(pest["exit"]):
+		Pests.SCURRY:
+			node.position.x += (1.0 - left) * SCURRY_METRES * int(pest["facing"]) * -1.0
+			node.rotation.y += PI
+		Pests.POP:
+			node.scale = Vector3(1.0 + (1.0 - left) * 0.3, left, 1.0 + (1.0 - left) * 0.3)
+		_:
+			node.scale = Vector3(1.0 + (1.0 - left) * 0.4, left, 1.0 + (1.0 - left) * 0.4)
+
+
+## The far backdrop scrolls at `PARALLAX` of the playfield's speed: real
+## geometry, recycled tile by tile, in the biome she is in.
+func _present_backdrop() -> void:
+	if not _camera_ready or _backdrop_tiles.is_empty():
+		return
+	var focus := camera.x * Art.WORLD_SCALE
+	var ground := Art.world_point(Vector2(0.0, ChunkLibrary.SEAM_ROW * Grid.TILE)).y
+	_far_ground.position = Vector3(focus, ground - 0.08, BiomeProps.BACKDROP_DEPTH * 0.5 - 0.8)
+	_far_ground_finish.albedo_color = BiomeProps.far_ground(state.biome)
+	_backdrop.position = Vector3(focus * (1.0 - BiomeProps.PARALLAX), ground, BiomeProps.BACKDROP_DEPTH)
+	if not _backdrop_meshes.has(state.biome):
+		_backdrop_meshes[state.biome] = BiomeProps.backdrop(state.biome)
+	var meshes: Dictionary = _backdrop_meshes[state.biome]
+	# In the backdrop's own, unscaled space: what is on screen, tile by tile.
+	var half := size.x / maxf(_zoom, 0.0001) * Art.WORLD_SCALE * 0.5 / BiomeProps.BACKDROP_SCALE
+	var local_centre := focus * BiomeProps.PARALLAX / BiomeProps.BACKDROP_SCALE
+	var first := floori((local_centre - half) / BiomeProps.BACKDROP_TILE)
+	for index in _backdrop_tiles.size():
+		var tile := _backdrop_tiles[index]
+		tile.position = Vector3((first + index) * BiomeProps.BACKDROP_TILE, 0.0, 0.0)
+		(tile.get_node("Lit") as MeshInstance3D).mesh = meshes["lit"]
+		(tile.get_node("Glow") as MeshInstance3D).mesh = meshes["glow"]
 
 
 ## A puff behind her paws for every stretch of ground she runs, never while

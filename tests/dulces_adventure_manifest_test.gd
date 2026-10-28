@@ -38,6 +38,7 @@ func _run() -> void:
 	_test_options(manifest, constants)
 	_test_bindings(manifest, constants)
 	_test_catalog(manifest)
+	_test_levels(manifest, constants)
 	_finish()
 
 
@@ -104,6 +105,32 @@ func _test_catalog(manifest: GameManifest) -> void:
 	_expect(listed != null, "GameCatalog must discover games/dulces_adventure/game.gd.")
 	if listed != null:
 		_expect(listed.title == manifest.title, "The catalog must hold this manifest.")
+
+
+## Start points in world order: the Backyard always open, every later one
+## gated by running as far as it is from the front door (DESIGN §5.4).
+func _test_levels(manifest: GameManifest, constants: Dictionary) -> void:
+	var expected := [
+		["backyard", ""],
+		["park", "REACHED_PARK"],
+		["street", "REACHED_STREET"],
+		["pier", "REACHED_PIER"],
+		["market", "REACHED_MARKET"],
+	]
+	_expect(manifest.levels.size() == expected.size(), "There are five endless start points.")
+	for index in mini(manifest.levels.size(), expected.size()):
+		var level: Dictionary = manifest.levels[index]
+		var pair: Array = expected[index]
+		_expect(level["id"] == pair[0], "Start point %d is '%s'." % [index + 1, pair[0]])
+		var gate := str(constants.get(pair[1], "")) if not str(pair[1]).is_empty() else ""
+		_expect(str(level.get("requires_achievement", "")) == gate,
+			"'%s' opens with %s." % [pair[0], gate if not gate.is_empty() else "nothing"])
+		if not gate.is_empty():
+			_expect(manifest.achievements.has(gate), "'%s''s gate is a real achievement." % pair[0])
+			_expect(not str(level.get("locked_description", "")).is_empty(),
+				"'%s' says how to unlock it." % pair[0])
+		_expect(ResourceLoader.exists(str(level.get("icon", ""))),
+			"'%s' has its captured still (%s)." % [pair[0], level.get("icon", "")])
 
 
 func _definition(definitions: Array[Dictionary], key: String) -> Dictionary:

@@ -102,11 +102,49 @@ const HUNDRED_BURGERS := 100
 const COMBO_CHAIN := 4
 const CLEAN_METRES := 500
 
-## Start points and fixed stages for the shared level selector. Filled in by
-## Milestones 5 and 6; empty means the setup screen asks no level question.
-const LEVELS: Array[Dictionary] = []
 ## Where a run starts when no level is chosen, and its best-runs section.
 const START_BACKYARD := "backyard"
+const START_PARK := "park"
+const START_STREET := "street"
+const START_PIER := "pier"
+const START_MARKET := "market"
+## Each start point's still, captured from the real chunks by
+## `tools/capture_art.gd`.
+const LEVEL_ART := "res://games/dulces_adventure/assets/levels/"
+
+## Start points for the shared level selector (DESIGN §5.4). Each later one
+## opens once a run has covered that far, counted from wherever it started.
+## Milestone 6 adds the fixed stages to the same list.
+const LEVELS: Array[Dictionary] = [
+	{
+		"id": START_BACKYARD, "title": "Endless - Backyard", "icon": LEVEL_ART + "backyard.png",
+		"description": "From Dulce's front door, past the picket fence. Pigeons and gnomes.",
+	},
+	{
+		"id": START_PARK, "title": "Endless - the Park", "icon": LEVEL_ART + "park.png",
+		"description": "Start 400 m out, among the ponds, trees and squirrels.",
+		"requires_achievement": REACHED_PARK,
+		"locked_description": "Run 400 m in one run to start from the Park.",
+	},
+	{
+		"id": START_STREET, "title": "Endless - Main Street", "icon": LEVEL_ART + "street.png",
+		"description": "Start 900 m out: manholes, parked cars and robo-vacs.",
+		"requires_achievement": REACHED_STREET,
+		"locked_description": "Run 900 m in one run to start from Main Street.",
+	},
+	{
+		"id": START_PIER, "title": "Endless - the Boardwalk Pier", "icon": LEVEL_ART + "pier.png",
+		"description": "Start 1,500 m out, over plank gaps under swooping seagulls.",
+		"requires_achievement": REACHED_PIER,
+		"locked_description": "Run 1,500 m in one run to start from the Pier.",
+	},
+	{
+		"id": START_MARKET, "title": "Endless - the Night Market", "icon": LEVEL_ART + "market.png",
+		"description": "Start 2,200 m out, among food trucks and spitting hot sauce.",
+		"requires_achievement": REACHED_MARKET,
+		"locked_description": "Run 2,200 m in one run to start from the Night Market.",
+	},
+]
 
 ## The cosmetics shop and the museum arrive in Milestone 7.
 const STORE_CURRENCY := {}

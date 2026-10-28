@@ -11,6 +11,7 @@ extends GameShell
 const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
 const State = preload("res://games/dulces_adventure/run_state.gd")
 const LevelStream = preload("res://games/dulces_adventure/level_stream.gd")
+const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
 const WorldView = preload("res://games/dulces_adventure/world_view.gd")
 const RunControls = preload("res://games/dulces_adventure/run_controls.gd")
 const RunHud = preload("res://games/dulces_adventure/run_hud.gd")
@@ -18,8 +19,6 @@ const Records = preload("res://games/dulces_adventure/run_records.gd")
 const Art = preload("res://games/dulces_adventure/dulce_art.gd")
 const DulceAudio = preload("res://games/dulces_adventure/dulce_audio.gd")
 
-## Where every run starts until Milestone 5's start points, for results copy.
-const START_TITLE := "the Backyard"
 ## Debug flag: replay a seed shown on the results panel.
 const SEED_ARGUMENT := "--dulce-seed="
 const HIT_SHAKE := 7.0
@@ -33,6 +32,7 @@ var _run_hud: RunHud
 var _records := Records.new()
 var _cues: Dictionary[String, AudioStreamWAV] = {}
 var _start_id := Options.START_BACKYARD
+var _start_biome: int = ChunkLibrary.Biome.BACKYARD
 ## This start point's best run before the current one, for "new best" copy.
 var _best := {}
 var _auto_run := false
@@ -81,7 +81,9 @@ func _reset_round_state() -> void:
 	_jump_pending = false
 	_ended = false
 	_seed = _requested_seed()
-	_stream = LevelStream.new(_seed)
+	_start_id = str(GameSession.selected_level().get("id", Options.START_BACKYARD))
+	_start_biome = ChunkLibrary.biome_named(_start_id)
+	_stream = LevelStream.new(_seed, _start_biome)
 	_state = _stream.start()
 	_state.auto_run = _auto_run
 	_state.kind_pits = _kind_pits
@@ -104,11 +106,19 @@ func _requested_seed() -> int:
 	return LevelStream.random_seed()
 
 
-func _live_chunks() -> Array[Vector2i]:
-	var chunks: Array[Vector2i] = []
+func _live_chunks() -> Array[Dictionary]:
+	var chunks: Array[Dictionary] = []
 	for chunk in _stream.placed:
-		chunks.append(Vector2i(int(chunk["column"]), int(chunk["width"])))
+		chunks.append({
+			"column": chunk["column"], "width": chunk["width"], "biome": chunk["biome"],
+			"gate": ChunkLibrary.gate_of(int(chunk["biome"]))["id"] == chunk["id"],
+		})
 	return chunks
+
+
+## "the Park", for "412 m from the Park".
+func _start_title() -> String:
+	return str(ChunkLibrary.BIOMES[_start_biome]["title"])
 
 
 func _activate_round() -> void:
@@ -151,6 +161,8 @@ func _on_run_event(event: Dictionary) -> void:
 			_view.rebuild_chunk_at(event["cell"].x)
 		"full":
 			_show_announcement("FULL!", Art.MUSTARD)
+		"biome":
+			_show_announcement("WELCOME TO %s!" % str(event["title"]).to_upper(), Art.CREAM, 1.0)
 		"heart":
 			_show_announcement("+1 HEART", Art.KETCHUP)
 		"stomp":
@@ -222,7 +234,7 @@ func _describe_round_outcome(_one: int, _two: int) -> Dictionary:
 	var best := int(_best.get("distance", 0))
 	var new_best := distance > best and distance > 0
 	var lines := PackedStringArray([
-		"%d m from %s" % [distance, START_TITLE],
+		"%d m from %s" % [distance, _start_title()],
 		"%d burgers, %d stomps" % [_state.burgers, _state.stomps],
 	])
 	if not new_best and best > 0:
@@ -275,7 +287,7 @@ func _player_stats(player: int) -> Dictionary:
 		"accuracy": roundi(100.0 * _state.burgers / passed) if passed > 0 else 0,
 		"streak": _state.best_chain,
 		"details": [
-			{"label": "Distance", "value": "%d m from %s" % [floori(_state.distance_m()), START_TITLE]},
+			{"label": "Distance", "value": "%d m from %s" % [floori(_state.distance_m()), _start_title()]},
 			{"label": "Stomps", "value": str(_state.stomps)},
 			{"label": "Pits", "value": str(_state.pits)},
 			{"label": "Longest clean stretch", "value": "%d m" % floori(_state.best_clean_m)},

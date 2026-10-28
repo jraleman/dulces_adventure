@@ -27,6 +27,8 @@ func _run() -> void:
 	_test_sequence_rules()
 	_test_every_run_is_fair()
 	_test_food_supply()
+	_test_biome_schedule()
+	_test_gate_events()
 	_test_live_window()
 	_test_seed_range()
 	_finish()
@@ -44,10 +46,7 @@ func _test_same_seed_same_run() -> void:
 
 
 func _test_sequence_rules() -> void:
-	var by_id := {}
-	for chunk in ChunkLibrary.pool(ChunkLibrary.Biome.BACKYARD):
-		by_id[chunk["id"]] = chunk
-	by_id[ChunkLibrary.START["id"]] = ChunkLibrary.START
+	var by_id := _chunks_by_id()
 	for seed_value in SEEDS:
 		var ids := LevelStream.sequence(seed_value, RUN_METRES)
 		var column := 0
@@ -78,20 +77,96 @@ func _test_every_run_is_fair() -> void:
 		for problem in ChunkLibrary.route_problems(LevelStream.strip(seed_value, RUN_METRES),
 				"seed %d" % seed_value):
 			_failures.append(problem)
+	# A whole cycle, from every start point, for a couple of seeds.
+	for start_biome: int in ChunkLibrary.Biome.values():
+		for seed_value in [3, 2024]:
+			for problem in ChunkLibrary.route_problems(
+					LevelStream.strip(seed_value, ChunkLibrary.CYCLE_METRES, start_biome),
+					"seed %d from %s" % [seed_value, ChunkLibrary.BIOMES[start_biome]["id"]]):
+				_failures.append(problem)
 
 
 func _test_food_supply() -> void:
 	for seed_value in SEEDS:
-		var rows := LevelStream.strip(seed_value, RUN_METRES)
-		var burgers := 0
-		for row in rows:
-			burgers += row.count("B") + row.count("?")
-		_expect(burgers >= Options.HUNDRED_BURGERS,
-			"Seed %d: Hungry Hungry needs %d burgers in a kilometre; there are %d."
-			% [seed_value, Options.HUNDRED_BURGERS, burgers])
+		_count_food(LevelStream.strip(seed_value, RUN_METRES), "Seed %d" % seed_value)
+	for start_biome: int in ChunkLibrary.Biome.values():
+		_count_food(LevelStream.strip(9, RUN_METRES, start_biome),
+			"From %s" % ChunkLibrary.BIOMES[start_biome]["title"])
+
+
+func _count_food(rows: Array[String], label: String) -> void:
+	var burgers := 0
+	for row in rows:
+		burgers += row.count("B") + row.count("?")
+	_expect(burgers >= Options.HUNDRED_BURGERS,
+		"%s: Hungry Hungry needs %d burgers in a kilometre; there are %d."
+		% [label, Options.HUNDRED_BURGERS, burgers])
 
 
 ## Moves her along a started run and checks the window around her.
+func _chunks_by_id() -> Dictionary:
+	var by_id := {}
+	for biome: int in ChunkLibrary.Biome.values():
+		for chunk in ChunkLibrary.chunks_of(biome):
+			by_id[chunk["id"]] = chunk
+	return by_id
+
+
+## Every chunk sits in the biome its place in the world calls for, each new
+## biome opens on its gate, and the cycle loops back to the front garden.
+func _test_biome_schedule() -> void:
+	var by_id := _chunks_by_id()
+	for start_biome: int in ChunkLibrary.Biome.values():
+		var stream := LevelStream.new(11, start_biome)
+		var ids := LevelStream.sequence(11, ChunkLibrary.CYCLE_METRES + 400.0, start_biome)
+		_expect(ids[0] == ChunkLibrary.gate_of(start_biome)["id"],
+			"A run from %s starts on its gate." % ChunkLibrary.BIOMES[start_biome]["title"])
+		var column := 0
+		var previous := start_biome
+		var seen := {}
+		for index in ids.size():
+			var id := ids[index]
+			var chunk: Dictionary = by_id[id]
+			# The opening gate starts 2 m before the start point, at column 0.
+			var expected := ChunkLibrary.biome_at(stream.world_metres(maxi(column, ChunkLibrary.START_COLUMN)))
+			var chunk_biome := int(chunk["biome"])
+			seen[chunk_biome] = true
+			_expect(chunk_biome == expected,
+				"%s at %d m belongs in %s." % [id, stream.world_metres(column),
+				ChunkLibrary.BIOMES[expected]["title"]])
+			if chunk_biome != previous:
+				_expect(chunk.get("gate", false), "%s opens its biome on a gate, not %s." % [
+					ChunkLibrary.BIOMES[chunk_biome]["title"], id])
+			previous = chunk_biome
+			column += ChunkLibrary.rows_of(chunk)[0].length()
+		_expect(seen.size() == ChunkLibrary.Biome.size(),
+			"A full cycle from %s visits every biome." % ChunkLibrary.BIOMES[start_biome]["title"])
+
+
+## The biome gate event reaches the run once, as she passes the gate.
+func _test_gate_events() -> void:
+	var stream := LevelStream.new(5)
+	var state := stream.start()
+	_expect(state.biome == ChunkLibrary.Biome.BACKYARD, "A Backyard run starts in the Backyard.")
+	var park_at := (ChunkLibrary.START_COLUMN + 400.0 + 20.0) * Grid.TILE
+	var announced := []
+	var x := state.position.x
+	while x < park_at:
+		x += 4.0 * Grid.TILE
+		state.place(Vector2(x, state.position.y))
+		state.furthest_x = x
+		stream.update(state, x - 10.0 * Grid.TILE)
+		state.advance(State.STEP, 0.0, false, false)
+		for event in state.take_events():
+			if event["kind"] == "biome":
+				announced.append(event["title"])
+	_expect(announced == ["the Park"], "Passing the Park's gate announces it once (%s)." % [announced])
+	_expect(state.biome == ChunkLibrary.Biome.PARK, "The run knows it is in the Park now.")
+	var market := LevelStream.new(5, ChunkLibrary.Biome.MARKET)
+	_expect(market.start().biome == ChunkLibrary.Biome.MARKET and market.start_metres == 2200.0,
+		"A Market start is 2200 m from the front door.")
+
+
 func _test_live_window() -> void:
 	var stream := LevelStream.new(7)
 	var state := stream.start()

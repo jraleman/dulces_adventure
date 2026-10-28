@@ -176,6 +176,25 @@ silhouette, not its colour.
 Enemies are model-side data (`enemy_state` dictionaries inside `run_state.gd`
 or a small `pests.gd`), never nodes, so the rules are testable headless.
 
+Details settled in Milestone 5 (all constants at the top of `pests.gd`):
+
+- **Squirrel:** waits facing her until she is within 6 tiles and 2 rows,
+  then charges at 160 u/s. It leaps gaps of up to 2 tiles and waits at the
+  edge of anything wider.
+- **Robo-Vac:** a stomp flips it onto its back (it rights itself after 6 s).
+  Touching a flipped vac kicks it away from her at 420 u/s. A sliding vac
+  bounces off walls, falls into pits and bonks every pest it touches, for
+  200 points each. For 0.3 s after a kick it can't hurt her; after that a
+  sliding vac is a hit unless she stomps it, which flips it again.
+- **Seagull:** flies, never falls. It patrols ±3 tiles around its perch on a
+  gentle bob, swoops when she passes underneath, then climbs back. A swoop
+  never comes within 8 units of the ground under it, nor more than 4 tiles
+  below its perch. Chunks place it in mid-air.
+- **Hot-Sauce Bottle:** hops in place every 1.6 s, and every 2.5 s spits a
+  drop toward her when she is within 8 tiles. Drops arc under gravity and
+  splat on the ground. A drop can't be stomped: touching one is a hit
+  (harmless during i-frames).
+
 ### 4.4 Collectibles
 
 | Item | Effect | Points |
@@ -290,24 +309,51 @@ are distance-based with a short banner and a gate set piece.
 | 4 | **Boardwalk Pier** | 1,500 m | Planks with gaps, water, beach umbrellas, sunset light | Fries |
 | 5 | **Night Market** | 2,200 m | Lanterns, food trucks, string lights, night palette | Burgers (gold wrapper) |
 
-After the Night Market the biomes loop with the difficulty still rising.
+After the Night Market (which runs to 3,000 m) the biomes loop, with the
+difficulty still rising.
+
+How it is built:
+
+- **Biomes follow the world; difficulty follows the run.** The biome comes
+  from how far the run is from the front door, so a Park start is 400 m out
+  and Main Street comes 500 m later. The difficulty ramp counts from the
+  run's own start, like every other distance (owner decision), so a later
+  start eases in. That is why every biome has chunks at difficulties 1–4.
+- **Gates.** Each biome opens with a fixed gate chunk: a flat breather with
+  the biome's "Welcome to" sign behind it and safe ground at column 2. The
+  stream places it where the world changes biome, and a run starting in that
+  biome starts on it. Passing a gate raises a `biome` event: the HUD banner,
+  the fanfare and its caption.
+- **Look.** `world/biome_props.gd` holds each biome's palette (ground, soil,
+  pit wall, platforms, sky), its props behind the playfield, its gate sign
+  and its far backdrop. Pits show the biome's pond, manhole or sea. The sky
+  blends to the next palette over 1.5 s (instantly with reduced motion), and
+  the Night Market's palette dims the sun, so it is night whatever the clock.
+  The orthographic camera has no perspective, so the backdrop is scaled to
+  0.42 and scrolls at 35% of the playfield's speed to read as distant.
+- **Pests by biome.** Each biome introduces its own pest (§4.3) and keeps
+  some of the earlier ones.
 
 ### 5.4 Levels as start points (shared level selector)
 
 Use the manifest's `levels` with achievement gates, exactly like Cube Trials'
 unlocks — but here a "level" is **where a run starts**:
 
-- **Backyard** — always open.
-- **Park** — unlocked by reaching 400 m (`dulces_adventure_reached_park`).
-- **Main Street** — unlocked by reaching 900 m.
-- **Pier** / **Night Market** — likewise.
+- **Endless - Backyard** — always open.
+- **Endless - the Park** — unlocked by running 400 m
+  (`dulces_adventure_reached_park`).
+- **Endless - Main Street** — unlocked by running 900 m.
+- **Endless - the Boardwalk Pier** / **Endless - the Night Market** — likewise.
+
+Each start point's id is its biome's id (`backyard`, `park`, `street`,
+`pier`, `market`), which is also its section in the best-runs file.
 
 Starting later gives a smaller distance score: distance counts from the
 start point **everywhere** (owner decision), so the score, the best distance
 and the reach achievements all measure the run itself. Show it as "from the
 Park". A later start never unlocks anything a Backyard run couldn't; it is
-practice. Level icons are captured from real chunks by a
-`tools/capture_art.gd`, as in Cube Trials.
+practice. Level icons (`assets/levels/<id>.png`, 384×240) are captured from
+the real gate chunks by `tools/capture_art.gd`, as in Cube Trials.
 
 ---
 
@@ -334,7 +380,7 @@ store_preview.gd / .tscn    # Dulce wearing one item
 gallery_stage.gd / .tscn    # turntable for the Gallery
 character_preview.gd / .tscn # Dulce in her equipped outfit on the setup plinth
 world/dulce_model.gd        # procedural rig: poses, ears/tail, Full state, collar socket
-world/biome_props.gd        # per-biome scenery factories (batched)
+world/biome_props.gd        # per-biome palettes, props, gate signs and backdrops (batched)
 world/pest_models.gd        # enemy meshes and their poses
 world/food_models.gd        # burgers, Big Burger, Golden Bone, Lunchbox blocks
 world/mesh_builder.gd       # copied from cube_trials, adapted

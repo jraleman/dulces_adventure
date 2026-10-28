@@ -58,6 +58,10 @@ const GOLDEN_BONE_POINTS := 1000
 const HEART_CAPPED_POINTS := 1000
 ## Stomps chained without touching the ground; the last value repeats.
 const STOMP_CHAIN_POINTS: Array[int] = [200, 400, 800, 1600]
+## Paid for every pest a kicked robo-vac bonks.
+const BONK_POINTS := 200
+## A kicked robo-vac also hops her a little, so a kick from above reads.
+const KICK_HOP_SPEED := 300.0
 
 const BURGER := "burger"
 const BIG_BURGER := "big_burger"
@@ -111,6 +115,10 @@ var lunchboxes: Dictionary[Vector2i, String] = {}
 ## Respawn points, sorted by x; a pit sends her to the last one passed.
 var safe_points: Array[Vector2] = []
 var safe_point := Vector2.ZERO
+## The biome she is in; a gate she passes changes it (DESIGN §5.3).
+var biome := 0
+## Biome gates ahead of her, sorted by x: `{x, biome, title}`.
+var gates: Array[Dictionary] = []
 
 var _accumulator := 0.0
 var _coyote_left := 0.0
@@ -141,6 +149,9 @@ func add_course(course: Dictionary) -> void:
 		lunchboxes[cell] = course["lunchboxes"][cell]
 	for spawn: Dictionary in course.get("pests", []):
 		pests.add(spawn["kind"], spawn["feet"])
+	for gate: Dictionary in course.get("gates", []):
+		gates.append(gate)
+	gates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["x"] < b["x"])
 	for point: Vector2 in course.get("safe_points", []):
 		safe_points.append(point)
 	safe_points.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.x < b.x)
@@ -323,12 +334,21 @@ func _step(move: float, run: bool, jump_held: bool) -> void:
 	if grounded:
 		chain = 0
 	_collect_items()
-	pests.step(grid, position.x, STEP)
+	pests.step(grid, position, STEP)
+	for event in pests.take_events():
+		if event["kind"] == "bonk":
+			stomp_points += BONK_POINTS
+			event["points"] = BONK_POINTS
+		_events.append(event)
 	_touch_pests(jump_held, previous_feet)
 	if over:
 		return
 	furthest_x = maxf(furthest_x, position.x)
 	best_clean_m = maxf(best_clean_m, (furthest_x - _clean_from_x) / Grid.TILE)
+	while not gates.is_empty() and furthest_x >= float(gates[0]["x"]):
+		var gate: Dictionary = gates.pop_front()
+		biome = int(gate["biome"])
+		_events.append({"kind": "biome", "biome": biome, "title": gate["title"]})
 	while _next_safe < safe_points.size() and position.x >= safe_points[_next_safe].x:
 		safe_point = safe_points[_next_safe]
 		_next_safe += 1
@@ -524,6 +544,17 @@ func _touch_pests(jump_held: bool, previous_feet: float) -> void:
 		var target := Pests.rect(pest)
 		if not rect.intersects(target):
 			continue
+		if pest["kind"] == Pests.SAUCE_DROP:
+			pests.defeat(pest)
+			if not is_invulnerable():
+				_hit(Pests.HOT_SAUCE)
+				rect = body_rect()
+			continue
+		if pest["kind"] == Pests.ROBO_VAC and pest["state"] == "flipped":
+			_kick(pest)
+			continue
+		if pests.is_harmless(pest):
+			continue
 		var from_above := velocity.y > 0.0 \
 			and previous_feet <= target.position.y + STOMP_TOLERANCE
 		if from_above and Pests.stompable(pest):
@@ -534,8 +565,17 @@ func _touch_pests(jump_held: bool, previous_feet: float) -> void:
 			rect = body_rect()
 
 
+## A flipped robo-vac is kicked away from her, the shell of DESIGN §4.3.
+func _kick(pest: Dictionary) -> void:
+	var direction := signi(roundi(float(pest["position"].x) - position.x))
+	pests.kick(pest, direction if direction != 0 else facing)
+	if not grounded and velocity.y > 0.0:
+		velocity.y = -KICK_HOP_SPEED
+	_events.append({"kind": "kick", "pest": pest["kind"]})
+
+
 func _stomp(pest: Dictionary, jump_held: bool, target: Rect2) -> void:
-	pests.defeat(pest)
+	pests.stomp(pest)
 	chain += 1
 	best_chain = maxi(best_chain, chain)
 	stomps += 1

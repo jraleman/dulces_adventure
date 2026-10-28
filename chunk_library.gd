@@ -15,6 +15,17 @@ const Pests = preload("res://games/dulces_adventure/pests.gd")
 
 enum Biome { BACKYARD, PARK, STREET, PIER, MARKET }
 
+## Biomes by where they start in the world, in metres from the front door.
+## After the Night Market they loop, and the difficulty ramp keeps rising.
+const BIOMES := {
+	Biome.BACKYARD: {"id": "backyard", "title": "the Backyard", "start_m": 0},
+	Biome.PARK: {"id": "park", "title": "the Park", "start_m": 400},
+	Biome.STREET: {"id": "street", "title": "Main Street", "start_m": 900},
+	Biome.PIER: {"id": "pier", "title": "the Boardwalk Pier", "start_m": 1500},
+	Biome.MARKET: {"id": "market", "title": "the Night Market", "start_m": 2200},
+}
+const CYCLE_METRES := 3000
+
 ## Every chunk has six rows and enters and leaves with its ground surface on
 ## this one, so any two chunks join.
 const SEAM_ROW := 4
@@ -56,9 +67,12 @@ const BLOCKS := ["#", "?", "!"]
 ## `jump_reach()` by rise, so a whole generated run validates in moments.
 static var _reach_by_rise: Dictionary[float, float] = {}
 
-## Dulce's front garden: every run starts here, so it is not in the pool.
+## Every biome opens with a gate chunk: the "Welcome to" set piece, and where a
+## run that starts in that biome begins. Gates are never drawn at random.
+## Dulce's front garden is the Backyard's.
 const START := {
 	"id": "backyard_start", "biome": Biome.BACKYARD, "difficulty": 1, "breather": true,
+	"gate": true,
 	"rows": [
 		"................",
 		"................",
@@ -304,11 +318,551 @@ const BACKYARD: Array[Dictionary] = [
 ]
 
 
-static func pool(biome: int) -> Array[Dictionary]:
+const PARK: Array[Dictionary] = [
+	{
+		"id": "park_gate", "biome": Biome.PARK, "difficulty": 1, "breather": true, "gate": true,
+		"rows": [
+			"................",
+			"................",
+			"................",
+			"..S....BBBBB....",
+			"################",
+			"################",
+		],
+	},
+	{
+		"id": "park_meadow", "biome": Biome.PARK, "difficulty": 1, "breather": true,
+		"rows": [
+			"..................",
+			".......?..........",
+			"..................",
+			".S..........BBB...",
+			"##################",
+			"##################",
+		],
+	},
+	{
+		"id": "park_path", "biome": Biome.PARK, "difficulty": 1, "breather": true,
+		"rows": [
+			"................",
+			".....BBBB.......",
+			".....====.......",
+			".S..............",
+			"################",
+			"################",
+		],
+	},
+	{
+		"id": "duck_pond", "biome": Biome.PARK, "difficulty": 1,
+		"rows": [
+			"..................",
+			"..................",
+			"......BBB.........",
+			".S..........S..p..",
+			"#####...##########",
+			"#####...##########",
+		],
+	},
+	{
+		"id": "park_steps", "biome": Biome.PARK, "difficulty": 1,
+		"rows": [
+			"..................",
+			"..........BB......",
+			"......BB.####.....",
+			".S...########...S.",
+			"##################",
+			"##################",
+		],
+	},
+	{
+		"id": "squirrel_run", "biome": Biome.PARK, "difficulty": 2,
+		"rows": [
+			"....................",
+			"....................",
+			".........BBB........",
+			".S.............s.S..",
+			"##########...#######",
+			"##########...#######",
+		],
+	},
+	{
+		"id": "bench_hop", "biome": Biome.PARK, "difficulty": 2,
+		"rows": [
+			"....................",
+			"......B.....B.......",
+			"....................",
+			".S...##....##...p.S.",
+			"####################",
+			"####################",
+		],
+	},
+	{
+		"id": "twin_ponds", "biome": Biome.PARK, "difficulty": 3,
+		"rows": [
+			"......................",
+			"......................",
+			"....BB.........BB.....",
+			".S.......S..s.......S.",
+			"###....######....#####",
+			"###....######....#####",
+		],
+	},
+	{
+		"id": "tree_tops", "biome": Biome.PARK, "difficulty": 3,
+		"rows": [
+			"......................",
+			"........BB....BB......",
+			".......====..====.....",
+			".S.................S..",
+			"#####............#####",
+			"#####............#####",
+		],
+	},
+	{
+		"id": "squirrel_ambush", "biome": Biome.PARK, "difficulty": 4,
+		"rows": [
+			"........................",
+			"........................",
+			"......BB..........BB....",
+			".S.........S..s.s.....S.",
+			"#####.....#########.####",
+			"#####.....#########.####",
+		],
+	},
+	{
+		"id": "high_branches", "biome": Biome.PARK, "difficulty": 4,
+		"rows": [
+			"...........BB.........",
+			"..........####........",
+			"......########........",
+			".S..##########......S.",
+			"##############.....###",
+			"##############.....###",
+		],
+	},
+]
+
+const STREET: Array[Dictionary] = [
+	{
+		"id": "street_gate", "biome": Biome.STREET, "difficulty": 1, "breather": true, "gate": true,
+		"rows": [
+			"................",
+			"................",
+			"................",
+			"..S....BBBBB....",
+			"################",
+			"################",
+		],
+	},
+	{
+		"id": "corner_shop", "biome": Biome.STREET, "difficulty": 1, "breather": true,
+		"rows": [
+			"....................",
+			".....?.....?........",
+			"....................",
+			".S.........BBB......",
+			"####################",
+			"####################",
+		],
+	},
+	{
+		"id": "awnings", "biome": Biome.STREET, "difficulty": 1, "breather": true,
+		"rows": [
+			"..................",
+			"....BBB...........",
+			"....===...===.....",
+			".S................",
+			"##################",
+			"##################",
+		],
+	},
+	{
+		"id": "manhole", "biome": Biome.STREET, "difficulty": 1,
+		"rows": [
+			"..................",
+			"..................",
+			"......BB..........",
+			".S..........S.p...",
+			"######..##########",
+			"######..##########",
+		],
+	},
+	{
+		"id": "kerb_steps", "biome": Biome.STREET, "difficulty": 1,
+		"rows": [
+			"..................",
+			"..........BB......",
+			"......BB..........",
+			".S...#####.##...S.",
+			"##################",
+			"##################",
+		],
+	},
+	{
+		"id": "vac_lane", "biome": Biome.STREET, "difficulty": 2,
+		"rows": [
+			"......................",
+			"......................",
+			"..............BBB.....",
+			".S.......v..........S.",
+			"#############...######",
+			"#############...######",
+		],
+	},
+	{
+		"id": "parked_cars", "biome": Biome.STREET, "difficulty": 2,
+		"rows": [
+			"......................",
+			".......BB......BB.....",
+			"......###.............",
+			".S...#####....####..S.",
+			"######################",
+			"######################",
+		],
+	},
+	{
+		"id": "vac_pair", "biome": Biome.STREET, "difficulty": 3,
+		"rows": [
+			"........................",
+			"........................",
+			"........BBB.............",
+			".S...v.........v.....S..",
+			"#################....###",
+			"#################....###",
+		],
+	},
+	{
+		"id": "scaffold", "biome": Biome.STREET, "difficulty": 3,
+		"rows": [
+			"......................",
+			"..........BBB.........",
+			"......===.===.===.....",
+			".S..................S.",
+			"#####............#####",
+			"#####............#####",
+		],
+	},
+	{
+		"id": "rush_hour", "biome": Biome.STREET, "difficulty": 4,
+		"rows": [
+			"..........................",
+			"..........................",
+			".......BB.........BB......",
+			".S..v.......S..v........S.",
+			"#######.....#######.....##",
+			"#######.....#######.....##",
+		],
+	},
+	{
+		"id": "rooftop", "biome": Biome.STREET, "difficulty": 4,
+		"rows": [
+			"........................",
+			".........p..............",
+			"......#######...........",
+			".S..#########.......S...",
+			"#############.....######",
+			"#############.....######",
+		],
+	},
+]
+
+const PIER: Array[Dictionary] = [
+	{
+		"id": "pier_gate", "biome": Biome.PIER, "difficulty": 1, "breather": true, "gate": true,
+		"rows": [
+			"................",
+			"................",
+			"................",
+			"..S....BBBBB....",
+			"################",
+			"################",
+		],
+	},
+	{
+		"id": "boardwalk", "biome": Biome.PIER, "difficulty": 1, "breather": true,
+		"rows": [
+			"..................",
+			"......?...........",
+			"..................",
+			".S.........BBBB...",
+			"##################",
+			"##################",
+		],
+	},
+	{
+		"id": "deck_chairs", "biome": Biome.PIER, "difficulty": 1, "breather": true,
+		"rows": [
+			"................",
+			"....BBB.........",
+			"....===.........",
+			".S..............",
+			"################",
+			"################",
+		],
+	},
+	{
+		"id": "plank_gaps", "biome": Biome.PIER, "difficulty": 1,
+		"rows": [
+			"....................",
+			"....................",
+			".....B....B.....B...",
+			".S..................",
+			"#####.####.####.####",
+			"#####.####.####.####",
+		],
+	},
+	{
+		"id": "gull_watch", "biome": Biome.PIER, "difficulty": 1,
+		"rows": [
+			"....................",
+			"..........g.........",
+			"....................",
+			".S......BB.....S....",
+			"############..######",
+			"############..######",
+		],
+	},
+	{
+		"id": "jetty", "biome": Biome.PIER, "difficulty": 2,
+		"rows": [
+			"......................",
+			"......................",
+			"....BB......BB........",
+			".S......S........S....",
+			"###...#####...########",
+			"###...#####...########",
+		],
+	},
+	{
+		"id": "two_gulls", "biome": Biome.PIER, "difficulty": 2,
+		"rows": [
+			"......................",
+			"......g.......g.......",
+			"......................",
+			".S.........BBB......S.",
+			"######################",
+			"######################",
+		],
+	},
+	{
+		"id": "broken_pier", "biome": Biome.PIER, "difficulty": 3,
+		"rows": [
+			"........................",
+			"........................",
+			".....B.....B.....B......",
+			".S.................S....",
+			"###...##...##....#######",
+			"###...##...##....#######",
+		],
+	},
+	{
+		"id": "gull_gap", "biome": Biome.PIER, "difficulty": 3,
+		"rows": [
+			"......................",
+			"........g.............",
+			"........BBB...........",
+			".S..............S.....",
+			"######.....###########",
+			"######.....###########",
+		],
+	},
+	{
+		"id": "storm_pier", "biome": Biome.PIER, "difficulty": 4,
+		"rows": [
+			"..........................",
+			".......g..........g.......",
+			"..........................",
+			".S.........S..p........S..",
+			"####.....#######.....#####",
+			"####.....#######.....#####",
+		],
+	},
+	{
+		"id": "crane", "biome": Biome.PIER, "difficulty": 4,
+		"rows": [
+			"........................",
+			"...........BB...........",
+			"...====...====...====...",
+			".S.........g..........S.",
+			"##....................##",
+			"##....................##",
+		],
+	},
+]
+
+const MARKET: Array[Dictionary] = [
+	{
+		"id": "market_gate", "biome": Biome.MARKET, "difficulty": 1, "breather": true, "gate": true,
+		"rows": [
+			"................",
+			"................",
+			"................",
+			"..S....BBBBB....",
+			"################",
+			"################",
+		],
+	},
+	{
+		"id": "market_stalls", "biome": Biome.MARKET, "difficulty": 1, "breather": true,
+		"rows": [
+			"....................",
+			"......?......?......",
+			"....................",
+			".S.......BBBB.......",
+			"####################",
+			"####################",
+		],
+	},
+	{
+		"id": "lantern_row", "biome": Biome.MARKET, "difficulty": 1, "breather": true,
+		"rows": [
+			"..................",
+			"......BBBB........",
+			"......====........",
+			".S................",
+			"##################",
+			"##################",
+		],
+	},
+	{
+		"id": "sauce_stall", "biome": Biome.MARKET, "difficulty": 1,
+		"rows": [
+			"....................",
+			"....................",
+			".......BB...........",
+			".S.............h..S.",
+			"##########..########",
+			"##########..########",
+		],
+	},
+	{
+		"id": "truck_hop", "biome": Biome.MARKET, "difficulty": 1,
+		"rows": [
+			"....................",
+			"........BB..........",
+			".......####.........",
+			".S.....####.....S...",
+			"####################",
+			"####################",
+		],
+	},
+	{
+		"id": "sauce_pair", "biome": Biome.MARKET, "difficulty": 2,
+		"rows": [
+			"......................",
+			"......................",
+			"...........BBB........",
+			".S...h...........h..S.",
+			"########...###########",
+			"########...###########",
+		],
+	},
+	{
+		"id": "canopies", "biome": Biome.MARKET, "difficulty": 2,
+		"rows": [
+			"......................",
+			".......BB....BB.......",
+			"......====..====......",
+			".S..................S.",
+			"######..........######",
+			"######..........######",
+		],
+	},
+	{
+		"id": "truck_convoy", "biome": Biome.MARKET, "difficulty": 3,
+		"rows": [
+			"........................",
+			"..............BB........",
+			"......###....####.......",
+			".S....###....####....S..",
+			"##########...###########",
+			"##########...###########",
+		],
+	},
+	{
+		"id": "night_vac", "biome": Biome.MARKET, "difficulty": 3,
+		"rows": [
+			"......................",
+			"......................",
+			"...........BB.........",
+			".S....v..........h..S.",
+			"#############....#####",
+			"#############....#####",
+		],
+	},
+	{
+		"id": "sauce_gauntlet", "biome": Biome.MARKET, "difficulty": 4,
+		"rows": [
+			"..........................",
+			"..........................",
+			".....BB........BB.........",
+			".S..h.......S.h........hS.",
+			"######.....######.....####",
+			"######.....######.....####",
+		],
+	},
+	{
+		"id": "rooftop_market", "biome": Biome.MARKET, "difficulty": 4,
+		"rows": [
+			"........................",
+			"..........g.............",
+			"......########..........",
+			".S..##########....h..S..",
+			"##############....######",
+			"##############....######",
+		],
+	},
+]
+
+## Every chunk of one biome, its gate included.
+static func chunks_of(biome: int) -> Array[Dictionary]:
 	match biome:
 		Biome.BACKYARD:
-			return BACKYARD
+			var backyard: Array[Dictionary] = [START]
+			backyard.append_array(BACKYARD)
+			return backyard
+		Biome.PARK:
+			return PARK
+		Biome.STREET:
+			return STREET
+		Biome.PIER:
+			return PIER
+		Biome.MARKET:
+			return MARKET
 	return []
+
+
+## The chunks the stream may draw at random in `biome`: everything but the gate.
+static func pool(biome: int) -> Array[Dictionary]:
+	var chunks: Array[Dictionary] = []
+	for chunk in chunks_of(biome):
+		if not chunk.get("gate", false):
+			chunks.append(chunk)
+	return chunks
+
+
+static func gate_of(biome: int) -> Dictionary:
+	for chunk in chunks_of(biome):
+		if chunk.get("gate", false):
+			return chunk
+	return START
+
+
+## The biome at `world_metres` from the front door, looping after the Market.
+static func biome_at(world_metres: float) -> int:
+	var along := fposmod(world_metres, CYCLE_METRES)
+	var found: int = Biome.BACKYARD
+	for biome: int in BIOMES:
+		if along >= float(BIOMES[biome]["start_m"]):
+			found = biome
+	return found
+
+
+static func biome_named(id: String) -> int:
+	for biome: int in BIOMES:
+		if BIOMES[biome]["id"] == id:
+			return biome
+	return Biome.BACKYARD
 
 
 static func rows_of(chunk: Dictionary) -> Array[String]:
@@ -392,6 +946,11 @@ static func validate(chunk: Dictionary) -> PackedStringArray:
 				problems.append("%s: the %s at (%d, %d) is not built yet." % [id, kind, column, row])
 	if not problems.is_empty():
 		return problems
+	if bool(chunk.get("gate", false)):
+		if not bool(chunk.get("breather", false)):
+			problems.append("%s: a gate is a breather, so a run can start on it." % id)
+		if rows[SEAM_ROW - 1][START_COLUMN] != "S":
+			problems.append("%s: a gate has safe ground at column %d, where runs start." % [id, START_COLUMN])
 	for column: int in [0, width - 1]:
 		if rows[SEAM_ROW][column] != "#" or _blocked_above(rows, column, SEAM_ROW):
 			problems.append("%s: column %d must be open ground on the seam row." % [id, column])
@@ -456,6 +1015,8 @@ static func _placement_problems(id: String, rows: Array[String]) -> PackedString
 		for column in rows[0].length():
 			var glyph := rows[row][column]
 			if not glyph in "pnsvgh":
+				continue
+			if Pests.flies(str(LEGEND[glyph])):
 				continue
 			if not spots.has(Vector2i(column, row + 1)):
 				problems.append("%s: the pest at (%d, %d) has nothing to stand on." % [id, column, row])

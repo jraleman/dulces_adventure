@@ -27,9 +27,9 @@ Only what exists so far. `DESIGN.md` §6 is the target layout.
 | `dulces_adventure_options.gd` | Constants-only tunables, bindings, levels, store and gallery |
 | `gameplay.gd` / `.tscn` | Shared-shell integration; inherited scene of `game_shell.tscn` |
 | `run_state.gd` | Node-free 120 Hz body and run rules: hearts, Full, food, stomps, score |
-| `pests.gd` | Node-free pest behaviours (pigeon, gnome so far) |
+| `pests.gd` | Node-free pest behaviours: pigeon, gnome, squirrel, robo-vac, seagull, hot sauce |
 | `tile_grid.gd` | Live tiles the body collides with, Lunchboxes included |
-| `chunk_library.gd` | The legend, the authored chunks, `build()` and the fairness validator |
+| `chunk_library.gd` | The legend, biomes, every biome's chunks and gate, `build()`, the validator |
 | `level_stream.gd` | Seeded chunk assembly: the live window, the ramp, breathers |
 | `run_records.gd` | Best runs in `user://dulces_adventure.cfg`; merges, never regresses |
 | `run_controls.gd` | Keyboard, gamepad and touch buttons into model inputs; no autoloads |
@@ -39,7 +39,9 @@ Only what exists so far. `DESIGN.md` §6 is the target layout.
 | `world/dulce_model.gd` | Dulce's procedural rig: one pivot per part, `pose_for(state)`, reactions |
 | `world/paw_particles.gd` | One 64-slot pool of dust, crumbs and feathers; off under reduced motion |
 | `dulce_audio.gd` | Synthesized cues, and `cue_for(event)`: each event's sound and caption |
-| `world/pest_models.gd`, `world/food_models.gd` | Grey-box pests, food and Lunchboxes |
+| `world/pest_models.gd`, `world/food_models.gd` | Pests, each biome's food flavour, Lunchboxes |
+| `world/biome_props.gd` | Per-biome palettes, props, gate signs and the parallax backdrop |
+| `tools/capture_art.gd` | Dev-only: renders `assets/levels/` stills (needs a window) |
 | `assets/icons` | Original white-stroke HUD and touch SVGs |
 | `world/mesh_builder.gd`, `world/daylight.gd` | Adapted copies of Cube Trials' batching and sun rig |
 | `tests` | Standalone Godot `SceneTree` regression scripts |
@@ -61,7 +63,11 @@ godot --headless --path . --script res://games/dulces_adventure/tests/dulce_stre
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_model_test.gd -- --game=all
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_audio_test.gd -- --game=all
 godot --path . -- --game=dulces_adventure --dulce-seed=42   # replay one seed
+godot --path . --script res://games/dulces_adventure/tools/capture_art.gd -- --only=levels
 ```
+
+Re-run `capture_art.gd` after changing a gate chunk, a biome's palette or its
+props, so the level selector's stills match the game.
 
 A new or edited chunk must pass `dulce_chunks_test.gd`. If the validator
 rejects it, widen or lower the chunk, never the validator: the validator is

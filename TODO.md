@@ -66,6 +66,18 @@ Don't start work that depends on an unanswered one.
       fails (Back button 42 px). Until 4.7 is installed, a change is checked
       by diffing against that baseline, and the four crashing suites are run
       with `--game=dulces_adventure` (only Dulce in the catalog).
+- [ ] **Don't run `--import` with Godot 4.6.2.** It rewrites tracked `.import`
+      files across the host and the submodules (it drops 4.7-only options
+      such as `fix_alpha_border`) and adds untracked `.uid` files. That
+      happened during Milestones 0–5; the stray changes were restored with
+      `git checkout` once found. Dulce's own `.import` files were written by
+      4.6.2 too, so expect 4.7 to add those options on its first import.
+- [ ] `tests/game_select_test.gd` (host) assumed every solo-only game skips
+      mode select. Dulce is the first solo-only game with `levels`, which
+      `Router.start_selected_game()` sends through mode select, so Back from
+      instructions correctly returns there. Milestone 5 fixed the test to
+      apply the router's rule. That is a host-repository change: commit it
+      there.
 - [ ] `tests/instructions_video_test.gd` requires **every** game to ship a
       walkthrough clip and poster, so it fails from the moment `game.gd`
       exists until Dulce has one. Record a grey-box clip at the end of
@@ -287,23 +299,42 @@ on.
 
 ## Milestone 5 — Biomes 2–5 (§4.3, §5.3–§5.4, §7.1)
 
-- [ ] `world/biome_props.gd` — Backyard, Park, Main Street, Boardwalk Pier,
+- [x] `world/biome_props.gd` — Backyard, Park, Main Street, Boardwalk Pier,
       Night Market; batched props and a far parallax backdrop of real
-      geometry.
-- [ ] Biome palettes in `world/daylight.gd`; the day/night toggle.
-- [ ] Distance-based biome changes with a banner and a gate set piece; loop
-      after the Night Market with difficulty still rising.
-- [ ] Food flavour per biome (hot dogs, tacos, fries, gold burgers).
-- [ ] Remaining pests: Squirrel, Robo-Vac (flip, kick, slide, bonk chain),
+      geometry. Props stand behind the playfield, placed by column so a seed
+      always dresses the same. Lanterns and lit windows go in a glow mesh.
+      The orthographic camera has no perspective, so the backdrop is scaled
+      to 0.42 and scrolls at 35% of the playfield's speed.
+- [x] Biome palettes (`biome_props.gd`, blended in `world/daylight.gd`); the
+      day/night toggle still works, and the Night Market dims the sun.
+- [x] Distance-based biome changes with a banner and a gate set piece; loop
+      after the Night Market with difficulty still rising. Biomes follow
+      world distance, while difficulty follows the run (see DESIGN §5.3).
+- [x] Food flavour per biome (hot dogs, tacos, fries, gold burgers).
+- [x] Remaining pests: Squirrel, Robo-Vac (flip, kick, slide, bonk chain),
       Seagull (swoop), Hot-Sauce Bottle (arc shot); their models.
-- [ ] Chunks for every biome, all through `validate()`.
-- [ ] `LEVELS` — endless start points ("Endless — Backyard" … "Endless —
-      Night Market"), gated by the reach achievements; distance relative.
-- [ ] `tools/capture_art.gd` — biome stills into `assets/levels/` for the
-      level icons. Dev-only.
-- [ ] Extend `tests/dulce_pests_test.gd` and `tests/dulce_chunks_test.gd`.
+- [x] Chunks for every biome, all through `validate()`: a gate, 2 breathers
+      and 2 chunks at each difficulty 1–4 per biome (44 new chunks). The
+      validator caught three of them with safe ground or a bottle over a pit.
+- [x] `LEVELS` — endless start points ("Endless - Backyard" … "Endless -
+      the Night Market"), gated by the reach achievements; distance relative.
+- [x] `tools/capture_art.gd` — biome stills into `assets/levels/` for the
+      level icons. Dev-only (exclude `tools/` from exports in Milestone 8).
+- [x] Extend `tests/dulce_pests_test.gd` and `tests/dulce_chunks_test.gd`,
+      plus the biome schedule, gate events and whole-cycle fairness from
+      every start point in `tests/dulce_stream_test.gd`, and vac and sauce
+      rules in `tests/dulce_rules_test.gd`.
 - [ ] **Exit:** a strong player can run from the Backyard into the Night
       Market, and each endless start unlocks from a fresh profile.
+      *On 4.6.2:* the stream suite walks a full 3,000 m cycle from every
+      start point, and the validator finds every pit jumpable. A scripted
+      run starts at the Park on a profile with it unlocked, and the setup
+      screen's gates come from the shared, tested level selector. Still to
+      do: run Backyard → Night Market by hand (about 2.2 km), check the
+      unlocks on a fresh profile in the real menus, and confirm on Godot 4.7.
+- [ ] Polish noted while building: the Market's food trucks and the Pier's
+      umbrellas can feel frequent; the Street backdrop is busy. Tune
+      `_roll` thresholds and backdrop density after playtests.
 
 ## Milestone 6 — Fixed stages (owner decision; not in DESIGN yet)
 

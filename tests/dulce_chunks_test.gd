@@ -22,15 +22,16 @@ func _run() -> void:
 	_test_every_chunk_validates()
 	_test_library_shape()
 	_test_start_chunk()
+	_test_biomes()
 	_test_validator_matches_the_jump()
 	_test_validator_rejects()
 	_finish()
 
 
 func _every_chunk() -> Array[Dictionary]:
-	var chunks: Array[Dictionary] = [ChunkLibrary.START]
+	var chunks: Array[Dictionary] = []
 	for biome: int in ChunkLibrary.Biome.values():
-		chunks.append_array(ChunkLibrary.pool(biome))
+		chunks.append_array(ChunkLibrary.chunks_of(biome))
 	return chunks
 
 
@@ -63,6 +64,48 @@ func _test_library_shape() -> void:
 			"%s sits in the Backyard pool but names another biome." % chunk["id"])
 		_expect(not "".join(ChunkLibrary.rows_of(chunk)).contains("s"),
 			"Backyard chunks only use Backyard pests (%s)." % chunk["id"])
+
+
+## Every biome after the Backyard: a gate, two breathers, and at least two
+## chunks at each difficulty from 1 to 4, all of its own biome.
+func _test_biomes() -> void:
+	var first_pests := {
+		ChunkLibrary.Biome.PARK: "s", ChunkLibrary.Biome.STREET: "v",
+		ChunkLibrary.Biome.PIER: "g", ChunkLibrary.Biome.MARKET: "h",
+	}
+	for biome: int in ChunkLibrary.Biome.values():
+		var title := str(ChunkLibrary.BIOMES[biome]["title"])
+		var gates := ChunkLibrary.chunks_of(biome).filter(func(chunk: Dictionary) -> bool:
+			return chunk.get("gate", false))
+		_expect(gates.size() == 1, "%s has exactly one gate (%d)." % [title, gates.size()])
+		var pool := ChunkLibrary.pool(biome)
+		_expect(not pool.has(ChunkLibrary.gate_of(biome)), "%s's gate is never drawn at random." % title)
+		var breathers := pool.filter(func(chunk: Dictionary) -> bool:
+			return chunk.get("breather", false))
+		_expect(breathers.size() >= 2, "%s has two or more breathers." % title)
+		for difficulty in [1, 2, 3, 4]:
+			var count := pool.filter(func(chunk: Dictionary) -> bool:
+				return not chunk.get("breather", false) and chunk["difficulty"] == difficulty).size()
+			_expect(count >= 2, "%s has two or more difficulty-%d chunks (%d)." % [title, difficulty, count])
+		for chunk in ChunkLibrary.chunks_of(biome):
+			_expect(int(chunk["biome"]) == biome, "%s is filed under %s." % [chunk["id"], title])
+		if first_pests.has(biome):
+			var text := ""
+			for chunk in pool:
+				text += "".join(ChunkLibrary.rows_of(chunk))
+			_expect(text.contains(first_pests[biome]),
+				"%s introduces its own pest ('%s')." % [title, first_pests[biome]])
+	var starts := []
+	for biome: int in ChunkLibrary.BIOMES:
+		var at := float(ChunkLibrary.BIOMES[biome]["start_m"])
+		starts.append(at)
+		_expect(ChunkLibrary.biome_at(at) == biome and ChunkLibrary.biome_at(at + 0.5) == biome,
+			"%s begins at %d m." % [ChunkLibrary.BIOMES[biome]["title"], at])
+		_expect(ChunkLibrary.biome_at(at + ChunkLibrary.CYCLE_METRES) == biome,
+			"After the Night Market the biomes loop.")
+		_expect(ChunkLibrary.biome_named(ChunkLibrary.BIOMES[biome]["id"]) == biome,
+			"Biomes can be found by id.")
+	_expect(starts == [0.0, 400.0, 900.0, 1500.0, 2200.0], "Biomes start where DESIGN §5.3 says.")
 
 
 func _test_start_chunk() -> void:
@@ -111,10 +154,12 @@ func _test_validator_rejects() -> void:
 	var unknown := _flat()
 	unknown[2] = ".....x.........."
 	_expect(_mentions(_problems(unknown), "not in the legend"), "Unknown glyphs are rejected.")
-	var unbuilt := _flat()
-	unbuilt[3] = ".S...s.........."
-	_expect(_mentions(_problems(unbuilt), "not built yet"),
-		"A pest from a later milestone is rejected until it exists.")
+	var flying := _flat()
+	flying[1] = ".....g.........."
+	_expect(_problems(flying).is_empty(), "A seagull flies, so it needs nothing under it.")
+	var busy_gate := {"id": "busy_gate", "biome": 0, "difficulty": 1, "gate": true, "rows": _pit(2)}
+	_expect(_mentions(ChunkLibrary.validate(busy_gate), "a gate is a breather"),
+		"A gate with a pit is rejected: runs start on gates.")
 	var closed := _flat()
 	closed[4] = "." + GROUND.substr(1)
 	closed[5] = "." + GROUND.substr(1)

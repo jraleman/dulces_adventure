@@ -37,6 +37,8 @@ func _run() -> void:
 	_test_stomp_chain()
 	_test_run_end()
 	_test_score_and_clean_distance()
+	_test_robo_vac_rules()
+	_test_sauce_drop()
 	_finish()
 
 
@@ -296,6 +298,55 @@ func _test_score_and_clean_distance() -> void:
 		"Score is whole metres x %d plus food and stomps." % State.DISTANCE_POINTS)
 	_hold(state, 1.0, 1.0)
 	_expect(state.best_clean_m == clean, "A hit restarts the clean stretch from zero.")
+
+
+## Stomp flips a robo-vac; walking into a flipped one kicks it; a sliding one
+## bonks pests for points and hurts her once the kick's grace is over.
+func _test_robo_vac_rules() -> void:
+	var state := _course([])
+	state.place(Vector2(10.5 * TILE, 1.0 * TILE))
+	var vac := state.pests.add(Pests.ROBO_VAC, Vector2(10.5 * TILE, FLOOR_Y))
+	var stomp := _until(state, "stomp", 2.0)
+	_expect(not stomp.is_empty() and vac["alive"] and vac["state"] == "flipped"
+		and state.stomp_points == State.STOMP_CHAIN_POINTS[0],
+		"Stomping a robo-vac flips it and scores like any stomp.")
+	# Straight back to the ground, before the bounce lands on the vac again.
+	state.place(Vector2(7.5 * TILE, FLOOR_Y))
+	vac["position"] = Vector2(10.5 * TILE, FLOOR_Y)
+	var pigeon := state.pests.add(Pests.PIGEON, Vector2(16.5 * TILE, FLOOR_Y))
+	var kick := _until(state, "kick", 2.0, 1.0)
+	_expect(not kick.is_empty() and vac["state"] == "sliding" and int(vac["facing"]) == 1
+		and state.hearts == State.STARTING_HEARTS,
+		"Walking into a flipped vac kicks it away from her, without a scratch.")
+	var points := state.stomp_points
+	var bonk := _until(state, "bonk", 2.0)
+	_expect(not bonk.is_empty() and not pigeon["alive"]
+		and state.stomp_points == points + State.BONK_POINTS,
+		"A sliding vac bonks the pigeon in its path, for %d points." % State.BONK_POINTS)
+	var sliding := _course([])
+	var runaway := sliding.pests.add(Pests.ROBO_VAC, Vector2(12.5 * TILE, FLOOR_Y))
+	runaway["active"] = true
+	sliding.pests.stomp(runaway)
+	sliding.pests.kick(runaway, -1)
+	runaway["grace"] = 0.0
+	var hurt := _until(sliding, "hurt", 3.0)
+	_expect(not hurt.is_empty() and hurt["cause"] == Pests.ROBO_VAC,
+		"A sliding vac coming at her is a hit.")
+
+
+func _test_sauce_drop() -> void:
+	var state := _course([])
+	var drop := state.pests.add(Pests.SAUCE_DROP, Vector2(1.5 * TILE, 2.0 * TILE))
+	drop["active"] = true
+	var hurt := _until(state, "hurt", 2.0)
+	_expect(not hurt.is_empty() and hurt["cause"] == Pests.HOT_SAUCE and not drop["alive"],
+		"A sauce drop that lands on her is a hit, and the drop is spent.")
+	var second := state.pests.add(Pests.SAUCE_DROP, Vector2(1.5 * TILE, 2.0 * TILE))
+	second["active"] = true
+	var hearts := state.hearts
+	_hold(state, 1.0)
+	_expect(state.hearts == hearts and not second["alive"],
+		"During i-frames a drop splats harmlessly.")
 
 
 # --------------------------------------------------------------------------
