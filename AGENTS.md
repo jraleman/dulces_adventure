@@ -26,13 +26,18 @@ Only what exists so far. `DESIGN.md` §6 is the target layout.
 | `game.gd` | Manifest, copy, theme, credits and achievement declarations |
 | `dulces_adventure_options.gd` | Constants-only tunables, bindings, levels, store and gallery |
 | `gameplay.gd` / `.tscn` | Shared-shell integration; inherited scene of `game_shell.tscn` |
-| `run_state.gd` | Node-free 120 Hz body; jump arithmetic the validator shares |
-| `tile_grid.gd` | Live tiles the body collides with; the stream will feed it |
-| `chunk_library.gd` | Authored terrain as string grids (Milestone 1: the grey-box course) |
-| `run_controls.gd` | Keyboard and gamepad into model inputs; touches no autoload |
+| `run_state.gd` | Node-free 120 Hz body and run rules: hearts, Full, food, stomps, score |
+| `pests.gd` | Node-free pest behaviours (pigeon, gnome so far) |
+| `tile_grid.gd` | Live tiles the body collides with, Lunchboxes included |
+| `chunk_library.gd` | The legend, `build()` and authored terrain (for now the grey-box course) |
+| `run_records.gd` | Best runs in `user://dulces_adventure.cfg`; merges, never regresses |
+| `run_controls.gd` | Keyboard, gamepad and touch buttons into model inputs; no autoloads |
+| `run_hud.gd` | Hearts, burgers and the FULL badge over the sky |
 | `world_view.gd` | Isolated `SubViewport`, forward-only orthographic camera, terrain bake |
 | `dulce_art.gd` | Palette, `WORLD_SCALE`, `world_point()`, materials |
-| `world/dulce_model.gd` | Dulce in 3D (grey box until the Milestone 4 GLB) |
+| `world/dulce_model.gd` | Dulce in 3D (grey box until the Milestone 4 GLB): blink, Full, tumble |
+| `world/pest_models.gd`, `world/food_models.gd` | Grey-box pests, food and Lunchboxes |
+| `assets/icons` | Original white-stroke HUD and touch SVGs |
 | `world/mesh_builder.gd`, `world/daylight.gd` | Adapted copies of Cube Trials' batching and sun rig |
 | `tests` | Standalone Godot `SceneTree` regression scripts |
 
@@ -45,7 +50,15 @@ godot --headless --path . --import
 godot --path . -- --game=dulces_adventure
 godot --headless --path . --script res://games/dulces_adventure/tests/dulces_adventure_manifest_test.gd -- --game=all
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_physics_test.gd -- --game=all
+godot --headless --path . --script res://games/dulces_adventure/tests/dulce_rules_test.gd -- --game=all
+godot --headless --path . --script res://games/dulces_adventure/tests/dulce_pests_test.gd -- --game=all
+godot --headless --path . --script res://games/dulces_adventure/tests/dulce_records_test.gd -- --game=all
 ```
+
+A test or a scripted run that can finish a run writes the player's real
+`dulces_adventure.cfg` and `achievements.cfg`. Point `run_records.gd` at a
+scratch path, or on Linux run Godot with `XDG_DATA_HOME` set to a scratch
+directory, which gives it a throwaway `user://`.
 
 The physics suite prints the measured jump limits. If a `run_state.gd`
 constant changes, those numbers change, and so does what the chunk validator

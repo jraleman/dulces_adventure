@@ -13,8 +13,16 @@ const State = preload("res://games/dulces_adventure/run_state.gd")
 
 ## Turning round takes this long; reduced motion turns at once.
 const TURN_SECONDS := 0.12
+## Full is a shape, not a colour: rounder and a little taller (DESIGN §9.5).
+const FULL_SCALE := Vector3(1.14, 1.1, 1.14)
+## The i-frame blink: a gentle opacity pulse, never a flash, in either mode.
+const BLINK_HZ := 4.0
+const BLINK_LOWEST := 0.35
+## The flustered tumble: one and a half turns over the tumble's length.
+const TUMBLE_TURNS := 1.5
 
 var _body: MeshInstance3D
+var _finish: StandardMaterial3D
 var _yaw := 0.0
 
 
@@ -23,7 +31,8 @@ func _init() -> void:
 	_body = MeshInstance3D.new()
 	_body.name = "GreyBox"
 	_body.mesh = _build_mesh()
-	_body.material_override = Art.material(0.8)
+	_finish = Art.material(0.8)
+	_body.material_override = _finish
 	add_child(_body)
 
 
@@ -36,6 +45,29 @@ func present(state: State, delta: float, reduced_motion: bool) -> void:
 	else:
 		_yaw = move_toward(_yaw, target, PI * delta / TURN_SECONDS)
 	rotation.y = _yaw
+	_body.scale = FULL_SCALE if state.full else Vector3.ONE
+	_present_blink(state)
+	_present_tumble(state, reduced_motion)
+
+
+func _present_blink(state: State) -> void:
+	var alpha := 1.0
+	if state.is_invulnerable():
+		var wave := 0.5 + 0.5 * cos(TAU * BLINK_HZ * state.invulnerable_left)
+		alpha = lerpf(BLINK_LOWEST, 1.0, wave)
+	_finish.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA if alpha < 1.0 \
+		else BaseMaterial3D.TRANSPARENCY_DISABLED
+	_finish.albedo_color = Color(1, 1, 1, alpha)
+
+
+## A cute topple, never a death animation. Reduced motion skips the spin and
+## simply tips her onto her side.
+func _present_tumble(state: State, reduced_motion: bool) -> void:
+	if not state.over:
+		_body.rotation.z = 0.0
+		return
+	var played := 1.0 - state.tumble_left / State.TUMBLE_SECONDS
+	_body.rotation.z = PI * 0.5 if reduced_motion else TAU * TUMBLE_TURNS * played
 
 
 ## 0.6 m long and 0.45 m tall to the ear tips (DESIGN §2), facing +x.

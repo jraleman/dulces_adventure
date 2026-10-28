@@ -357,18 +357,21 @@ func _test_auto_run() -> void:
 func _test_pit() -> void:
 	var rows: Array[String] = ["", "", "", "", "####...####", "####...####"]
 	var state := _body(Grid.new(rows), Vector2(1.5 * TILE, FLOOR_Y))
-	_hold(state, 4.0, 1.0)
-	_expect(state.fell and _count(state.take_events(), "fell") == 1,
-		"Walking into a pit reports one fall.")
-	var x := state.position.x
-	_hold(state, 1.0, 1.0)
-	_expect(state.position.x == x, "The model stops stepping after a fall until it is placed.")
-	state.place(Vector2(1.5 * TILE, FLOOR_Y))
-	_expect(not state.fell and state.grounded, "place() is a respawn on safe ground.")
+	for _tick in 600:
+		state.advance(STEP, 1.0, false, false)
+		if state.pits > 0:
+			break
+	_expect(state.pits == 1 and _count(state.take_events(), "respawn") == 1,
+		"Walking into a pit reports one fall and one respawn.")
+	_expect(state.grounded and state.position == Vector2(1.5 * TILE, FLOOR_Y),
+		"With no safe ground passed, a pit sends her back to the start, at rest.")
 	# She ran from 1.5 tiles to past the pit's edge at 4 before dropping.
 	_expect(is_equal_approx(state.distance_m(), (state.furthest_x - 1.5 * TILE) / TILE)
 		and state.distance_m() > 4.0 - 1.5,
 		"Distance is the furthest point from the start, in metres, kept through a respawn.")
+	state.place(Vector2(9.5 * TILE, FLOOR_Y))
+	_expect(state.grounded and state.velocity == Vector2.ZERO,
+		"place() puts her at rest on the floor.")
 
 
 func _test_grid() -> void:

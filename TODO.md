@@ -71,13 +71,16 @@ Don't start work that depends on an unanswered one.
       `GameSession.character_options()` is empty. The outfit-on-the-plinth
       preview needs one `characters` entry (Dulce). A single-entry picker
       would then show too. Check how that looks, or drop the preview.
-- [ ] The chunk validator needs at least one `S` (§5.2), but the stream also
+- [x] The chunk validator needs at least one `S` (§5.2), but the stream also
       says "a chunk with no marker gets one at its entry seam". Pick one
       rule. As written, the §5.1 `PIT_HOP` example has no `S` and fails the
-      validator.
-- [ ] The §5.1 legend has no glyph for the **Golden Bone**, and doesn't say
+      validator. *Chose explicit `S` only, standing on solid ground (DESIGN
+      §5.2). Fix `PIT_HOP` when Milestone 3 writes real chunks.*
+- [x] The §5.1 legend has no glyph for the **Golden Bone**, and doesn't say
       how a `?` Lunchbox picks a burger or a Big Burger (seeded roll? an
-      authored variant glyph?). Add both before writing chunks.
+      authored variant glyph?). Add both before writing chunks. *Chose `+`
+      for the bone, and authored contents: `?` burger, `!` Big Burger (DESIGN
+      §4.4, §5.1).*
 - [ ] The §8 table lists gamepad buttons, but Cube Trials polls the gamepad
       directly in `gameplay.gd`, so those buttons aren't rebindable in
       Settings. Accept that (as Cube Trials does), or raise it as framework
@@ -86,14 +89,21 @@ Don't start work that depends on an unanswered one.
       There's no CPU, so `win_bonus` must be 0. Decide `round_bonus` and
       `max_per_round`, and whether clearing a stage pays extra (that has to be
       a `_round_points_earned` override).
-- [ ] With relative distance, the reach achievements are named after biomes
+- [x] With relative distance, the reach achievements are named after biomes
       ("Off the Leash", PARK) but can be earned from any start. Run 400 m from
       the Park and you get "reached_park" somewhere on Main Street. Keep the
       keys (they're permanent) but check the titles and descriptions say
-      "run 400 m", not "reach the Park".
-- [ ] `save_files` (§6.3) describes "best distance and score from each start
+      "run 400 m", not "reach the Park". *Keys and titles kept; descriptions
+      say "Run 400 m in one run" (DESIGN §9.1).*
+- [x] `save_files` (§6.3) describes "best distance and score from each start
       point". Stages add clears and a best per stage. Agree on the
       `user://dulces_adventure.cfg` layout before Milestone 2 writes it.
+      *One section per start point (`[backyard]`), fields `distance`, `score`,
+      `burgers`, each only ever rising; saves merge (DESIGN §4.5). Stages add
+      their own sections in Milestone 6.*
+- [ ] Phones show the keyboard hint in the shell's bottom bar. DESIGN §8 says
+      phones show icons only. Hide or replace the hint when the touch buttons
+      are showing (Milestone 8 touch pass).
 
 ---
 
@@ -171,30 +181,43 @@ on.
 
 ## Milestone 2 — Rules (§4.2–§4.5, §9.1)
 
-- [ ] Hearts (3), the Full state, i-frames (opacity blink), pit fall and
+- [x] Hearts (3), the Full state, i-frames (opacity blink), pit fall and
       respawn at the last safe ground, run end after the tumble.
-- [ ] The Kind pits assist.
-- [ ] Collectibles: burger, Big Burger, Golden Bone, Lunchbox bonk from below;
+- [x] The Kind pits assist.
+- [x] Collectibles: burger, Big Burger, Golden Bone, Lunchbox bonk from below;
       every 100 burgers gives a heart (points once capped).
-- [ ] Scoring: distance × 10 + items + stomps, stomp chain 200 → 1600 cap.
+- [x] Scoring: distance × 10 + items + stomps, stomp chain 200 → 1600 cap.
       Distance counts from the start point.
-- [ ] `pests.gd` (node-free): Grumpy Pigeon and Garden Gnome; stomp vs side
-      hit.
-- [ ] `run_hud.gd` — hearts, distance, burgers, score, a Full icon; icons and
-      numbers, never colour alone.
-- [ ] `run_controls.gd` — first-pass multitouch buttons (keyboard and
-      gamepad are done).
-- [ ] `GameShell` hooks (§6.2) wired: end the run at `hearts == 0` through the
+- [x] `pests.gd` (node-free): Grumpy Pigeon and Garden Gnome; stomp vs side
+      hit. Pests wake within 16 tiles, so a chunk plays as authored.
+- [x] `run_hud.gd` — hearts (filled or outline), burgers and a FULL badge
+      over the sky. Distance and score went into the shell's own two HUD
+      cards instead (distance takes the big one, as the headline).
+- [x] `run_controls.gd` — first-pass multitouch buttons: ◀ ▶ and a big Jump,
+      double-tap-and-hold ▶ to run; the ground line lifts clear of them.
+      Shown only on touchscreens.
+- [x] `GameShell` hooks (§6.2) wired: end the run at `hearts == 0` through the
       shell's normal end-of-round path, as Cube Trials does; `_round_totals`,
       `_player_stats`, `_describe_round_outcome`, `_round_highlight_summary`.
-- [ ] Achievements registered (§9.1, all seven keys); the four reach
-      achievements, `combo` and `clean` awarded. Assists never block them.
-- [ ] Best runs in `user://dulces_adventure.cfg`, declared in `save_files`.
-- [ ] `tests/dulce_rules_test.gd`, `tests/dulce_pests_test.gd` (pigeon,
+      "Collected" is burgers eaten out of burgers passed, so the percentage
+      is real on an endless run.
+- [x] Achievements registered (§9.1, all seven keys); the four reach
+      achievements, `combo`, `clean` and `hundred` awarded. Assists never
+      block them.
+- [x] Best runs in `user://dulces_adventure.cfg`, declared in `save_files`
+      (`run_records.gd`, `tests/dulce_records_test.gd`).
+- [x] `tests/dulce_rules_test.gd`, `tests/dulce_pests_test.gd` (pigeon,
       gnome).
+- [x] Grey-box pest and food models (`world/pest_models.gd`,
+      `world/food_models.gd`), told apart by silhouette.
 - [ ] **Exit:** a grey-box run with pits, two pests and burgers ends in
       results with distance, score and achievements, and `saves_test.gd`
       still passes.
+      *On 4.6.2:* a scripted run ends in results ("NEW BEST: 422 M!",
+      "Unlocked: Off the Leash") through the real shell path, run in a
+      throwaway `XDG_DATA_HOME`; `saves_test` fails exactly as it did before
+      Dulce existed. Still to do: confirm on Godot 4.7, play it by hand, and
+      record the grey-box walkthrough clip (see Discrepancies).
 
 ## Milestone 3 — Stream (§5.1–§5.2)
 

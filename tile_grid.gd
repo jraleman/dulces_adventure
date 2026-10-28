@@ -14,6 +14,11 @@ const EMPTY := 0
 const SOLID := 1
 ## Lands from above only; walked and jumped through from below and the sides.
 const ONE_WAY := 2
+## A solid block with food inside; a bump from below opens it (DESIGN §4.4).
+const LUNCHBOX := 3
+## What a Lunchbox becomes once it has been opened: still solid, now empty.
+const EMPTY_BOX := 4
+const SOLIDS: Array[int] = [SOLID, LUNCHBOX, EMPTY_BOX]
 
 ## The legend characters this grid understands. The full chunk legend, with
 ## pickups and pests, belongs to `chunk_library.gd`; anything else is air here.
@@ -52,7 +57,7 @@ func tile(cell: Vector2i) -> int:
 
 
 func is_solid(cell: Vector2i) -> bool:
-	return tile(cell) == SOLID
+	return tile(cell) in SOLIDS
 
 
 ## Frees every tile left of `column`, as the stream drops chunks behind the view.

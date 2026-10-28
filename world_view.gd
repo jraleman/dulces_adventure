@@ -2,9 +2,9 @@ extends Control
 
 ## An isolated Compatibility 3D viewport that draws the run under the 2D shell.
 ##
-## Read-only: it presents `run_state.gd` and its tile grid, and reports where
-## the camera's left edge is so the model can stop Dulce walking past it. The
-## camera only ever scrolls forward (DESIGN §4.7).
+## Read-only: it presents `run_state.gd` (its tiles, food, Lunchboxes, pests
+## and Dulce) and reports where the camera's left edge is, so the model can
+## stop her walking past it. The camera only ever scrolls forward (DESIGN §4.7).
 
 const Art = preload("res://games/dulces_adventure/dulce_art.gd")
 const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
@@ -13,6 +13,9 @@ const MeshBuilder = preload("res://games/dulces_adventure/world/mesh_builder.gd"
 const Daylight = preload("res://games/dulces_adventure/world/daylight.gd")
 const DulceModel = preload("res://games/dulces_adventure/world/dulce_model.gd")
 const State = preload("res://games/dulces_adventure/run_state.gd")
+const Pests = preload("res://games/dulces_adventure/pests.gd")
+const FoodModels = preload("res://games/dulces_adventure/world/food_models.gd")
+const PestModels = preload("res://games/dulces_adventure/world/pest_models.gd")
 
 ## How much of the run fits on screen, in tiles, before the aspect decides.
 const VISIBLE_TILES_WIDE := 18.0
@@ -30,6 +33,12 @@ const GROUND_LINE := 0.72
 const CAMERA_OFFSET := Vector3(0, 5.0, 30.0)
 const MAX_RENDER_WIDTH := 1920
 const MAX_RENDER_HEIGHT := 1600
+## Food turns slowly on the spot so it reads as a pickup; reduced motion parks it.
+const FOOD_SPIN := 1.6
+const FOOD_PARKED_ANGLE := 0.5
+## Never let the ground line climb above this much of the frame to clear the
+## touch buttons; on a very short screen they overlap the ground instead.
+const HIGHEST_GROUND_LINE := 0.55
 
 var state: State
 var reduced_motion := false
@@ -43,6 +52,11 @@ var world: Node3D
 var dulce: DulceModel
 var daylight: Daylight
 var _terrain: MeshInstance3D
+## Pixels at the bottom of this control covered by touch buttons.
+var bottom_inset := 0.0
+var _finish: StandardMaterial3D
+var _items: Dictionary[Vector2i, MeshInstance3D] = {}
+var _pests: Dictionary[int, MeshInstance3D] = {}
 var _shadow: MeshInstance3D
 var _image: TextureRect
 var _zoom := 1.0
@@ -69,9 +83,10 @@ func _ready() -> void:
 	world.name = "RunWorld"
 	world_viewport.add_child(world)
 	daylight = Daylight.new(world)
+	_finish = Art.material()
 	_terrain = MeshInstance3D.new()
 	_terrain.name = "Terrain"
-	_terrain.material_override = Art.material()
+	_terrain.material_override = _finish
 	world.add_child(_terrain)
 	dulce = DulceModel.new()
 	world.add_child(dulce)
@@ -110,8 +125,14 @@ func _ready() -> void:
 
 ## Points the view at a run, and snaps the camera to it on the next frame.
 func configure(run: State) -> void:
+	var fresh := run != state
 	state = run
 	_camera_ready = false
+	if fresh:
+		for node: Node3D in _items.values() + _pests.values():
+			node.queue_free()
+		_items.clear()
+		_pests.clear()
 	if is_inside_tree():
 		rebuild_terrain()
 		present(0.0)
@@ -141,9 +162,13 @@ static func terrain_mesh(grid: Grid) -> ArrayMesh:
 			Vector3(width, depth, 0.1), Art.PIT)
 	for cell in grid.cells():
 		var centre := Art.world_point((Vector2(cell) + Vector2(0.5, 0.5)) * Grid.TILE)
-		if grid.tile(cell) == Grid.ONE_WAY:
+		var kind := grid.tile(cell)
+		if kind == Grid.ONE_WAY:
 			var top := centre + Vector3(0, cell_size * 0.5 - 0.08, 0)
 			mesh.box(top, Vector3(cell_size, 0.16, Art.GROUND_DEPTH * 0.6), Art.PLANK)
+			continue
+		if kind == Grid.LUNCHBOX or kind == Grid.EMPTY_BOX:
+			FoodModels.lunchbox(mesh, centre, cell_size * 0.92, kind == Grid.EMPTY_BOX)
 			continue
 		var soil := Art.SOIL if (cell.x + cell.y) % 2 == 0 else Art.SOIL_DARK
 		mesh.box(centre, Vector3(cell_size, cell_size, Art.GROUND_DEPTH), soil)
@@ -170,6 +195,8 @@ func present(delta: float) -> void:
 		return
 	var moving_delta := 0.0 if get_tree().paused else delta
 	dulce.present(state, moving_delta, reduced_motion)
+	_present_items()
+	_present_pests()
 	_present_shadow()
 	_present_camera(moving_delta)
 	var light_time := state.elapsed if day_night_enabled and not reduced_motion else 0.0
@@ -188,6 +215,56 @@ func set_intense_effects(value: bool) -> void:
 func set_day_night_enabled(value: bool) -> void:
 	day_night_enabled = value
 	present(0.0)
+
+
+## Food appears when it is in the model and goes when it is eaten, including a
+## Big Burger popped out of a Lunchbox mid-run.
+func _present_items() -> void:
+	for cell: Vector2i in _items.keys():
+		if not state.items.has(cell):
+			_items[cell].queue_free()
+			_items.erase(cell)
+	var angle := FOOD_PARKED_ANGLE if reduced_motion else state.elapsed * FOOD_SPIN
+	for cell: Vector2i in state.items:
+		if not _items.has(cell):
+			var food := MeshInstance3D.new()
+			food.name = "%s_%d_%d" % [state.items[cell], cell.x, cell.y]
+			food.mesh = FoodModels.mesh_for(state.items[cell])
+			food.material_override = _finish
+			food.position = Art.world_point((Vector2(cell) + Vector2(0.5, 0.5)) * Grid.TILE)
+			world.add_child(food)
+			_items[cell] = food
+		_items[cell].rotation.y = angle
+
+
+## Pests turn to face the way they walk; a stomped one shrinks into its puff,
+## or simply vanishes under reduced motion.
+func _present_pests() -> void:
+	var live := {}
+	for pest: Dictionary in state.pests.list:
+		var id: int = pest["id"]
+		live[id] = true
+		if not _pests.has(id):
+			var body := MeshInstance3D.new()
+			body.name = "%s_%d" % [pest["kind"], id]
+			body.mesh = PestModels.mesh_for(pest["kind"])
+			body.material_override = _finish
+			world.add_child(body)
+			_pests[id] = body
+		var node := _pests[id]
+		node.position = Art.world_point(pest["position"])
+		node.rotation.y = 0.0 if int(pest["facing"]) > 0 else PI
+		if pest["alive"]:
+			node.visible = true
+			node.scale = Vector3.ONE
+		else:
+			var left := float(pest["poof"]) / Pests.POOF_SECONDS
+			node.visible = not reduced_motion and left > 0.0
+			node.scale = Vector3(1.0 + (1.0 - left) * 0.4, left, 1.0 + (1.0 - left) * 0.4)
+	for id: int in _pests.keys():
+		if not live.has(id):
+			_pests[id].queue_free()
+			_pests.erase(id)
 
 
 ## Projects a simulation point to this control's pixels, for HUD and tests.
@@ -235,7 +312,10 @@ func _present_camera(delta: float) -> void:
 	_left = trailing if not _camera_ready else maxf(_left, trailing)
 	camera.x = _left + view_size.x * 0.5
 	var seam := ChunkLibrary.SEAM_ROW * Grid.TILE
-	var target_y := seam - view_size.y * (GROUND_LINE - 0.5)
+	# Lift the ground line clear of any touch buttons along the bottom edge.
+	var clear := 1.0 - (bottom_inset + 12.0) / size.y if bottom_inset > 0.0 else 1.0
+	var ground_line := clampf(minf(GROUND_LINE, clear), HIGHEST_GROUND_LINE, GROUND_LINE)
+	var target_y := seam - view_size.y * (ground_line - 0.5)
 	# Rise with her only once she nears the top of the frame.
 	var ceiling := target_y - view_size.y * 0.3
 	if state.position.y - State.BODY_SIZE.y < ceiling:
@@ -251,12 +331,20 @@ func _present_camera(delta: float) -> void:
 	world_camera.look_at(focus, Vector3.UP)
 
 
+## Physical pixels per design pixel for whatever viewport `node` is drawn in.
+## Measures that viewport rather than the OS window, which is the same thing
+## in the game but not when the scene is hosted in a `SubViewport`.
+static func physical_scale(node: Node) -> float:
+	var viewport := node.get_viewport()
+	var physical := Vector2((viewport as Window).size) if viewport is Window \
+		else Vector2((viewport as SubViewport).size)
+	return physical.x / maxf(viewport.get_visible_rect().size.x, 1.0)
+
+
 func _resize_world() -> void:
 	if world_viewport == null:
 		return
-	var visible_size := get_viewport().get_visible_rect().size
-	var physical_scale := float(get_window().size.x) / maxf(visible_size.x, 1.0)
-	var render_size := size * physical_scale
+	var render_size := size * physical_scale(self)
 	if render_size.x > MAX_RENDER_WIDTH:
 		render_size *= MAX_RENDER_WIDTH / render_size.x
 	if render_size.y > MAX_RENDER_HEIGHT:

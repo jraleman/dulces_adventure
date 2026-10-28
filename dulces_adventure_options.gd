@@ -85,9 +85,28 @@ const CONTROL_BINDINGS: Array[Dictionary] = [
 	},
 ]
 
+## Achievement keys are save keys in `user://achievements.cfg`: stable forever.
+const REACHED_PARK := "dulces_adventure_reached_park"
+const REACHED_STREET := "dulces_adventure_reached_street"
+const REACHED_PIER := "dulces_adventure_reached_pier"
+const REACHED_MARKET := "dulces_adventure_reached_market"
+const HUNDRED := "dulces_adventure_hundred"
+const COMBO := "dulces_adventure_combo"
+const CLEAN := "dulces_adventure_clean"
+## Metres run in one run, counted from wherever it started (owner decision:
+## distance is relative everywhere). The first four also gate start points.
+const REACH_METRES := {
+	REACHED_PARK: 400, REACHED_STREET: 900, REACHED_PIER: 1500, REACHED_MARKET: 2200,
+}
+const HUNDRED_BURGERS := 100
+const COMBO_CHAIN := 4
+const CLEAN_METRES := 500
+
 ## Start points and fixed stages for the shared level selector. Filled in by
 ## Milestones 5 and 6; empty means the setup screen asks no level question.
 const LEVELS: Array[Dictionary] = []
+## Where a run starts when no level is chosen, and its best-runs section.
+const START_BACKYARD := "backyard"
 
 ## The cosmetics shop and the museum arrive in Milestone 7.
 const STORE_CURRENCY := {}

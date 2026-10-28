@@ -184,7 +184,7 @@ or a small `pests.gd`), never nodes, so the rules are testable headless.
 | Fries / taco / hot dog | Flavour variants per biome, same as a burger | 100 |
 | Big Burger | Becomes Full (§4.2); 1,000 points if already Full | 500 |
 | Golden Bone | +1 heart, max 3 | 1,000 |
-| Lunchbox block | Bonk from below with a jump → pops a burger or (rarely) a Big Burger | — |
+| Lunchbox block | Bonk from below with a jump. Contents are authored: `?` holds a burger (eaten at once), `!` a Big Burger (pops out on top). It becomes an empty, still-solid box | — |
 
 Every **100 burgers** in one run = +1 heart (capped at 3; points if capped).
 
@@ -198,7 +198,11 @@ stomp points: 200, chained stomps without touching ground 200 → 400 → 800 �
 **Distance is the headline** on the HUD, results, share card and achievements;
 score is the secondary line. "Best distance" is persisted (in
 `user://dulces_adventure.cfg`, declared as a `save_files` entry — progress,
-not an option).
+not an option). Layout: one `ConfigFile` section per start point
+(`[backyard]`, later `[park]`, … and the fixed stages), each holding
+`distance`, `score` and `burgers`. Each field only ever goes up, and a save
+merges into the stored file, so a build that doesn't know a section never
+deletes it.
 
 ### 4.6 Auto-run assist
 
@@ -238,9 +242,11 @@ const PIT_HOP := {
 ```
 
 Legend (keep it in one const): `#` ground, `=` one-way platform, `?` lunchbox
-block, `B` burger, `G` big burger, `p` pigeon, `n` gnome, `s` squirrel,
+block holding a burger, `!` lunchbox block holding a Big Burger, `B` burger,
+`G` big burger, `+` golden bone, `p` pigeon, `n` gnome, `s` squirrel,
 `v` robo-vac, `g` seagull, `h` hot sauce, `S` safe-ground marker,
-`.` air. Every chunk enters and leaves at **ground height row 4** (the
+`.` air. Lunchbox contents are authored, never rolled, so a chunk plays the
+same way every time. A pest or `S` glyph stands on the bottom of its cell. Every chunk enters and leaves at **ground height row 4** (the
 "seam") so any two chunks can join.
 
 ### 5.2 Streaming — `level_stream.gd`
@@ -253,7 +259,8 @@ block, `B` burger, `G` big burger, `p` pigeon, `n` gnome, `s` squirrel,
   `difficulty <= 1 + distance_m / 150` *(tune)*, never repeats a chunk
   twice in a row, and inserts a flat "breather" chunk at least every 4.
 - **Safe-ground points**: each chunk declares `S` markers; pit respawn uses
-  the last one passed. A chunk with no marker gets one at its entry seam.
+  the last one passed. Every chunk declares at least one; there is no
+  automatic marker, and an `S` must stand on solid ground, never over a pit.
 - **Validator** (`chunk_library.validate(chunk)`, called by tests on every
   chunk): seam heights match, every gap ≤ the max running-jump width with a
   1-tile margin, every required ledge ≤ the max jump height with a margin,
@@ -285,9 +292,11 @@ unlocks — but here a "level" is **where a run starts**:
 - **Main Street** — unlocked by reaching 900 m.
 - **Pier** / **Night Market** — likewise.
 
-Starting later gives a smaller distance score (distance counts from the
-biome's start offset, so leaderboard-style "best" is still meaningful; show
-it as "from the Park"). Level icons are captured from real chunks by a
+Starting later gives a smaller distance score: distance counts from the
+start point **everywhere** (owner decision), so the score, the best distance
+and the reach achievements all measure the run itself. Show it as "from the
+Park". A later start never unlocks anything a Backyard run couldn't; it is
+practice. Level icons are captured from real chunks by a
 `tools/capture_art.gd`, as in Cube Trials.
 
 ---
@@ -298,6 +307,8 @@ it as "from the Park"). Level icons are captured from real chunks by a
 game.gd                     # GameManifest — copy, theme, achievements, credits
 dulces_adventure_options.gd # constants-only: tunables, bindings, store, gallery
 gameplay.gd / .tscn         # extends GameShell; inherited scene of game_shell.tscn
+tile_grid.gd                # live tiles the body collides with; the stream feeds it
+run_records.gd              # best runs in user://dulces_adventure.cfg
 intro.tscn                  # four story cards (shared intro shape)
 run_state.gd                # node-free 120 Hz body, hits, hearts, scoring
 pests.gd                    # node-free enemy behaviours
@@ -315,6 +326,7 @@ character_preview.gd / .tscn # Dulce in her equipped outfit on the setup plinth
 world/dulce_model.gd        # GLB adapter: poses, ears/tail, Full state, outfits
 world/biome_props.gd        # per-biome scenery factories (batched)
 world/pest_models.gd        # enemy meshes and their poses
+world/food_models.gd        # burgers, Big Burger, Golden Bone, Lunchbox blocks
 world/mesh_builder.gd       # copied from cube_trials, adapted
 world/daylight.gd           # copied rig, biome palettes
 world/paw_particles.gd      # bounded, shadow-free particle batches
@@ -462,13 +474,13 @@ Assists never block achievements (Cube Trials' rule).
 
 | Key | Title | Badge | Condition |
 | --- | --- | --- | --- |
-| `dulces_adventure_reached_park` | Off the Leash | PARK | Reach 400 m |
-| `dulces_adventure_reached_street` | Street Smart | STREET | Reach 900 m |
-| `dulces_adventure_reached_pier` | Sea Legs | PIER | Reach 1,500 m |
-| `dulces_adventure_reached_market` | Follow Your Nose | MARKET | Reach 2,200 m |
+| `dulces_adventure_reached_park` | Off the Leash | PARK | Run 400 m in one run |
+| `dulces_adventure_reached_street` | Street Smart | STREET | Run 900 m in one run |
+| `dulces_adventure_reached_pier` | Sea Legs | PIER | Run 1,500 m in one run |
+| `dulces_adventure_reached_market` | Follow Your Nose | MARKET | Run 2,200 m in one run |
 | `dulces_adventure_hundred` | Hungry Hungry | 100 | 100 burgers in one run |
 | `dulces_adventure_combo` | Boing Boing Boing | COMBO | 4-stomp chain |
-| `dulces_adventure_clean` | Not a Scratch | CLEAN | 500 m without a hit |
+| `dulces_adventure_clean` | Not a Scratch | CLEAN | 500 m without a hit or a fall |
 
 The first four also gate the start-biome levels (§5.4).
 

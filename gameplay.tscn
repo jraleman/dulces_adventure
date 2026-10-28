@@ -5,3 +5,24 @@
 
 [node name="DulcesAdventure" instance=ExtResource("1_shell")]
 script = ExtResource("2_game")
+
+[node name="Caption" parent="HUD/RoundOver/Center/ScorePanel/Layout/Overview/Duration/Layout" index="0"]
+text = "RUN TIME"
+
+[node name="Caption" parent="HUD/RoundOver/Center/ScorePanel/Layout/Overview/Hits/Layout" index="0"]
+text = "BURGERS"
+
+[node name="Caption" parent="HUD/RoundOver/Center/ScorePanel/Layout/Overview/Accuracy/Layout" index="0"]
+text = "COLLECTED"
+
+[node name="HitsCaption" parent="HUD/RoundOver/Center/ScorePanel/Layout/Report/Players/PlayerOne/Layout/Stats" index="0"]
+text = "Burgers"
+
+[node name="MissesCaption" parent="HUD/RoundOver/Center/ScorePanel/Layout/Report/Players/PlayerOne/Layout/Stats" index="2"]
+text = "Hits taken"
+
+[node name="AccuracyCaption" parent="HUD/RoundOver/Center/ScorePanel/Layout/Report/Players/PlayerOne/Layout/Stats" index="4"]
+text = "Burgers collected"
+
+[node name="StreakCaption" parent="HUD/RoundOver/Center/ScorePanel/Layout/Report/Players/PlayerOne/Layout/Stats" index="6"]
+text = "Best stomp chain"

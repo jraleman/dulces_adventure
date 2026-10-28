@@ -21,6 +21,11 @@ static func manifest() -> GameManifest:
 	game.supports_multiplayer = false
 	game.supports_cpu_opponent = false
 	game.levels = Options.LEVELS
+	# Best distance is progress, so the Saves screen keeps it with the rest.
+	game.save_files = [{
+		"path": Options.SAVE_PATH, "title": "Best runs",
+		"description": "Best distance, score and burgers from each start point.",
+	}]
 	game.tunables = Options.TUNABLES
 	game.control_bindings = Options.CONTROL_BINDINGS
 	game.stats_url = "https://deskcansaw.com"
@@ -40,5 +45,36 @@ static func manifest() -> GameManifest:
 			+ "costs one. Your score is the distance you run, plus burgers and stomps."
 		),
 		"instructions_demo_prompt": "GO, DULCE!",
+	}
+	game.achievements = {
+		Options.REACHED_PARK: {
+			"title": "Off the Leash", "badge": "PARK",
+			"description": "Run %d m in one run." % Options.REACH_METRES[Options.REACHED_PARK],
+		},
+		Options.REACHED_STREET: {
+			"title": "Street Smart", "badge": "STREET",
+			"description": "Run %d m in one run." % Options.REACH_METRES[Options.REACHED_STREET],
+		},
+		Options.REACHED_PIER: {
+			"title": "Sea Legs", "badge": "PIER",
+			"description": "Run %d m in one run." % Options.REACH_METRES[Options.REACHED_PIER],
+		},
+		Options.REACHED_MARKET: {
+			"title": "Follow Your Nose", "badge": "MARKET",
+			"description": "Run %d m in one run." % Options.REACH_METRES[Options.REACHED_MARKET],
+		},
+		Options.HUNDRED: {
+			"title": "Hungry Hungry", "badge": "100",
+			"description": "Eat %d burgers in one run." % Options.HUNDRED_BURGERS,
+		},
+		Options.COMBO: {
+			"title": "Boing Boing Boing", "badge": "COMBO",
+			"description": "Stomp %d pests in a row without touching the ground."
+				% Options.COMBO_CHAIN,
+		},
+		Options.CLEAN: {
+			"title": "Not a Scratch", "badge": "CLEAN",
+			"description": "Run %d m without a hit or a fall." % Options.CLEAN_METRES,
+		},
 	}
 	return game
