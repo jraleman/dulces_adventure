@@ -74,7 +74,7 @@ into this folder).
 | `trial_state.gd` — node-free 120 Hz chassis model | `run_state.gd` — node-free 120 Hz platformer body and run rules |
 | `course.gd` — handcrafted routes, pickups, checkpoints | `chunk_library.gd` + `level_stream.gd` — authored chunks, seeded assembly, safe-ground points |
 | `course_view.gd` — isolated `SubViewport`, orthographic Side camera | `world_view.gd` — same isolated `SubViewport`, orthographic side camera, optional "Chase" later |
-| `world/cube_model.gd` — imported GLB car, damage stages, decorative poses | `world/dulce_model.gd` — imported GLB dog, run/jump/land/eat poses, decorative ear and tail motion |
+| `world/cube_model.gd` — imported GLB car, damage stages, decorative poses | `world/dulce_model.gd` — procedural rig of rigid parts (like Chicken Pit's `chicken_rig.gd`), run/jump/land/eat poses, decorative ear and tail motion |
 | `world/mesh_builder.gd` — vertex-colour batching | Same idea, copied into `world/mesh_builder.gd` |
 | `world/daylight.gd` — sun/sky rig, optional day/night | Same rig; biome palettes; optional day/night toggle |
 | `world/tire_particles.gd` — bounded dust | `world/paw_particles.gd` — footstep dust, landing puff, crumbs on eating |
@@ -333,14 +333,13 @@ share_art.gd / .tscn        # portrait of Dulce for the share card
 store_preview.gd / .tscn    # Dulce wearing one item
 gallery_stage.gd / .tscn    # turntable for the Gallery
 character_preview.gd / .tscn # Dulce in her equipped outfit on the setup plinth
-world/dulce_model.gd        # GLB adapter: poses, ears/tail, Full state, outfits
+world/dulce_model.gd        # procedural rig: poses, ears/tail, Full state, collar socket
 world/biome_props.gd        # per-biome scenery factories (batched)
 world/pest_models.gd        # enemy meshes and their poses
 world/food_models.gd        # burgers, Big Burger, Golden Bone, Lunchbox blocks
 world/mesh_builder.gd       # copied from cube_trials, adapted
 world/daylight.gd           # copied rig, biome palettes
 world/paw_particles.gd      # bounded, shadow-free particle batches
-assets/models/              # dulce.glb, enemies, props (Blender sources in tools/blender/)
 assets/icons/               # HUD/touch SVGs: heart, burger, distance, run, jump, pause
 assets/levels/              # captured biome stills for the level selector
 assets/video/               # tutorial.ogv + poster
@@ -405,9 +404,12 @@ game.theme = theme                              # §7.3
 
 - Real 3D in an isolated `SubViewport` (Compatibility renderer), orthographic
   side camera with a slight downward tilt so ground tops read.
-- **Original** low-poly models, vertex-coloured, authored in Blender and
-  exported as GLB (keep the `.blend` and generator scripts in `tools/blender/`,
-  as Cube Trials does). Scenery batched through `mesh_builder.gd`.
+- **Original** low-poly models, vertex-coloured, built from rounded
+  primitives in GDScript through `mesh_builder.gd` (owner decision: no
+  Blender on the build machine, and procedural parts keep poses testable
+  headless, as Chicken Pit's birds are). Dulce is a rig of rigid parts, one
+  pivot per head, ear, leg, tail and collar. A Blender GLB could replace any
+  part later behind the same calls. Scenery is batched the same way.
 - Warm daylight rig with Compatibility shadows; Dulce casts a blob or real
   shadow so her height over a pit is always readable.
 - Depth layers: playfield at depth 0; props at ±1–3 m; a far parallax backdrop
@@ -418,10 +420,12 @@ game.theme = theme                              # §7.3
 
 Chihuahua mix — big upright ears, short muzzle, round eyes, compact body,
 slightly longer legs than a pure chihuahua (the "mix"), curled tail. Coat:
-**fawn/tan with a cream chest and muzzle** *(confirm against reference photos
-— see §12)*. Collar slot for store items.
+**fawn/tan with a cream chest and muzzle** *(the assumed look, used until
+reference photos arrive — see §13.1; every coat colour lives in
+`dulce_art.gd`, so photos mean a recolour, not a new rig)*. Collar socket
+for store items; the default collar is red.
 
-Poses (all model-side blend shapes or bone poses in one GLB):
+Poses (angles on the rig's pivots; `dulce_model.pose_for(state)` picks one):
 idle (tail wag), trot, sprint (ears back), jump-up, apex, fall, land
 (squash), stomp-bounce, hit (flustered), tumble (run over), eat (chomp,
 crumbs), Full (rounder belly morph), victory sit for the results and share card.

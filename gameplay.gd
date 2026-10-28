@@ -16,6 +16,7 @@ const RunControls = preload("res://games/dulces_adventure/run_controls.gd")
 const RunHud = preload("res://games/dulces_adventure/run_hud.gd")
 const Records = preload("res://games/dulces_adventure/run_records.gd")
 const Art = preload("res://games/dulces_adventure/dulce_art.gd")
+const DulceAudio = preload("res://games/dulces_adventure/dulce_audio.gd")
 
 ## Where every run starts until Milestone 5's start points, for results copy.
 const START_TITLE := "the Backyard"
@@ -30,6 +31,7 @@ var _view: WorldView
 var _controls: RunControls
 var _run_hud: RunHud
 var _records := Records.new()
+var _cues: Dictionary[String, AudioStreamWAV] = {}
 var _start_id := Options.START_BACKYARD
 ## This start point's best run before the current one, for "new best" copy.
 var _best := {}
@@ -55,6 +57,7 @@ func _load_round_settings() -> void:
 
 
 func _build_playfield() -> void:
+	_cues = DulceAudio.cues()
 	_stream = LevelStream.new(_seed)
 	_state = _stream.start()
 	_view = WorldView.new()
@@ -132,6 +135,12 @@ func _update_round(delta: float, _time_left: float) -> void:
 
 
 func _on_run_event(event: Dictionary) -> void:
+	_view.react(event)
+	# Sound and caption come from one table, so every captioned event is tested.
+	var cue := DulceAudio.cue_for(event)
+	if _cues.has(cue["cue"]):
+		AudioManager.play_sfx(_cues[cue["cue"]], cue["volume_db"], cue["pitch"])
+	AudioManager.request_caption(cue["caption"])
 	match str(event["kind"]):
 		"respawn":
 			# The camera edge only moves forward, so a respawn behind it

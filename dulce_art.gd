@@ -11,8 +11,15 @@ const CREAM := Color("fff1d6")
 const MUSTARD := Color("f2b33d")
 const KETCHUP := Color("d9533b")
 const LETTUCE := Color("6fae4f")
-## Dulce's coat, pending reference photos (DESIGN §13.1).
+## Dulce's coat and markings: the assumed look (DESIGN §7.2), all in one place
+## so reference photos mean a recolour here, not a new rig.
 const FAWN := Color("d6a26b")
+const FAWN_DARK := Color("b9834f")
+const MARKINGS := Color("fbe9cf")
+const EAR_INSIDE := Color("e9b49a")
+const NOSE := Color("2b2226")
+## The default red collar (DESIGN §9.2); the store's collars replace it.
+const COLLAR := Color("c8413a")
 const SOIL := Color("8a5a3c")
 const SOIL_DARK := Color("6b4430")
 ## The back wall of a pit: dark enough to read as a hole, warm enough to stay
@@ -43,6 +50,23 @@ static func material(roughness := 0.85, metallic := 0.0) -> StandardMaterial3D:
 	finish.roughness = roughness
 	finish.metallic = metallic
 	return finish
+
+
+## A soft round puff for dust, crumbs and feathers.
+static func soft_particle_texture() -> GradientTexture2D:
+	var gradient := Gradient.new()
+	gradient.offsets = PackedFloat32Array([0.0, 0.2, 0.5, 1.0])
+	gradient.colors = PackedColorArray([
+		Color.WHITE, Color(1, 1, 1, 0.8), Color(1, 1, 1, 0.25), Color(1, 1, 1, 0),
+	])
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.width = 32
+	texture.height = 32
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.5)
+	texture.fill_to = Vector2(1.0, 0.5)
+	return texture
 
 
 ## Unlit and alpha-blended, for the blob shadow and other flat helpers that

@@ -16,6 +16,7 @@ const State = preload("res://games/dulces_adventure/run_state.gd")
 const Pests = preload("res://games/dulces_adventure/pests.gd")
 const FoodModels = preload("res://games/dulces_adventure/world/food_models.gd")
 const PestModels = preload("res://games/dulces_adventure/world/pest_models.gd")
+const PawParticles = preload("res://games/dulces_adventure/world/paw_particles.gd")
 
 ## How much of the run fits on screen, in tiles, before the aspect decides.
 const VISIBLE_TILES_WIDE := 18.0
@@ -39,6 +40,13 @@ const FOOD_PARKED_ANGLE := 0.5
 ## Never let the ground line climb above this much of the frame to clear the
 ## touch buttons; on a very short screen they overlap the ground instead.
 const HIGHEST_GROUND_LINE := 0.55
+## One puff of dust behind her paws every this many metres at a run.
+const FOOTSTEP_METRES := 0.45
+const FOOTSTEP_SPEED := 150.0
+const DUST := Color(0.82, 0.72, 0.58, 0.7)
+const FEATHERS := Color(0.93, 0.93, 0.95, 0.9)
+## The pigeon's waddle, a decoration reduced motion parks.
+const WADDLE_HZ := 2.2
 
 var state: State
 var reduced_motion := false
@@ -50,6 +58,7 @@ var world_viewport: SubViewport
 var world_camera: Camera3D
 var world: Node3D
 var dulce: DulceModel
+var particles: PawParticles
 var daylight: Daylight
 ## One baked terrain surface per live chunk, by the chunk's first column, so
 ## placing a chunk or opening a Lunchbox re-bakes one chunk, not the run.
@@ -67,6 +76,7 @@ var _zoom := 1.0
 ## The forward-only left edge of the frame, in simulation units.
 var _left := -INF
 var _camera_ready := false
+var _footstep_left := FOOTSTEP_METRES
 
 
 func _init() -> void:
@@ -90,6 +100,9 @@ func _ready() -> void:
 	_finish = Art.material()
 	dulce = DulceModel.new()
 	world.add_child(dulce)
+	particles = PawParticles.new()
+	particles.reduced_motion = reduced_motion
+	world.add_child(particles)
 	_shadow = MeshInstance3D.new()
 	_shadow.name = "BlobShadow"
 	var disc := CylinderMesh.new()
@@ -133,6 +146,8 @@ func configure(run: State, chunks: Array[Vector2i] = []) -> void:
 	state = run
 	_camera_ready = false
 	if fresh:
+		if particles != null:
+			particles.clear()
 		for node: Node3D in _items.values() + _pests.values() + _chunk_meshes.values():
 			node.queue_free()
 		_items.clear()
@@ -253,6 +268,8 @@ func present(delta: float) -> void:
 		return
 	var moving_delta := 0.0 if get_tree().paused else delta
 	dulce.present(state, moving_delta, reduced_motion)
+	_present_footsteps(moving_delta)
+	particles.advance(moving_delta)
 	_present_items()
 	_present_pests()
 	_present_shadow()
@@ -261,8 +278,38 @@ func present(delta: float) -> void:
 	daylight.set_elapsed(light_time)
 
 
+## Shows one run event: Dulce's reaction and its puff of dust, crumbs or
+## feathers. Read-only, like everything else here.
+func react(event: Dictionary) -> void:
+	if dulce == null or state == null:
+		return
+	var feet := Art.world_point(state.position)
+	match str(event.get("kind", "")):
+		"jump":
+			particles.burst(feet, 3, DUST, 0.1, 0.35, 0.2, 0.35)
+		"land":
+			dulce.react("land")
+			var impact := clampf(float(event.get("speed", 0.0)) / 1200.0, 0.3, 1.0)
+			particles.burst(feet, roundi(4 + 4 * impact), DUST, 0.12 * impact + 0.05,
+				0.7 * impact, 0.35, 0.45)
+		"stomp":
+			dulce.react("stomp")
+			particles.burst(feet + Vector3(0, -0.1, 0), 8, FEATHERS, 0.1, 0.9, 0.8, 0.5)
+		"eat":
+			dulce.react("eat")
+			var cell: Vector2i = event.get("cell", Vector2i.ZERO)
+			var at := Art.world_point((Vector2(cell) + Vector2(0.5, 0.5)) * Grid.TILE)
+			particles.burst(at, 5, FoodModels.BUN, 0.06, 0.5, 0.5, 0.35)
+		"hurt", "shrink":
+			dulce.react("hurt")
+
+
 func set_reduced_motion(value: bool) -> void:
 	reduced_motion = value
+	if particles != null:
+		particles.reduced_motion = value
+		if value:
+			particles.clear()
 	present(0.0)
 
 
@@ -312,6 +359,12 @@ func _present_pests() -> void:
 		var node := _pests[id]
 		node.position = Art.world_point(pest["position"])
 		node.rotation.y = 0.0 if int(pest["facing"]) > 0 else PI
+		node.rotation.z = 0.0
+		if pest["kind"] == Pests.PIGEON and pest["active"] and pest["alive"] \
+				and not reduced_motion:
+			var step := sin(state.elapsed * TAU * WADDLE_HZ + id)
+			node.rotation.z = step * 0.14
+			node.position.y += absf(step) * 0.025
 		if pest["alive"]:
 			node.visible = true
 			node.scale = Vector3.ONE
@@ -323,6 +376,19 @@ func _present_pests() -> void:
 		if not live.has(id):
 			_pests[id].queue_free()
 			_pests.erase(id)
+
+
+## A puff behind her paws for every stretch of ground she runs, never while
+## she walks slowly or flies.
+func _present_footsteps(delta: float) -> void:
+	if not state.grounded or absf(state.velocity.x) < FOOTSTEP_SPEED or state.over:
+		return
+	_footstep_left -= absf(state.velocity.x) * Art.WORLD_SCALE * delta
+	if _footstep_left > 0.0:
+		return
+	_footstep_left = FOOTSTEP_METRES
+	var behind := Vector2(state.position.x - 8.0 * state.facing, state.position.y)
+	particles.burst(Art.world_point(behind, 0.05), 1, DUST, 0.11, 0.15, 0.25, 0.4)
 
 
 ## Projects a simulation point to this control's pixels, for HUD and tests.

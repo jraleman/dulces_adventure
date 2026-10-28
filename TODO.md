@@ -28,10 +28,15 @@ Don't start work that depends on an unanswered one.
       start point. So a later start never unlocks anything a Backyard run
       couldn't. It's practice, labelled "from the Park".
 - [x] **Hot seat** (§13.4) — v2. v1 is solo (`supports_multiplayer = false`).
+- [x] **How Dulce is built** — a procedural rig of rigid parts in GDScript,
+      like Chicken Pit's birds, not a Blender GLB (owner decision: Blender
+      isn't installed, and procedural parts keep poses testable headless).
 - [ ] **Dulce's real look** (§13.1) — reference photos for coat, ears and
-      markings. Blocks the final model (Milestone 4). Puppy Kraft's TODO
-      lists "overlap with Dulce's Adventure" as a blocker for its own art
-      direction, so settle Dulce's look first.
+      markings. Milestone 4 shipped the assumed look (owner decision: fawn,
+      cream chest and muzzle, big upright ears, curled tail). Photos now mean
+      a recolour in `dulce_art.gd`, plus ear or tail shape tweaks in
+      `world/dulce_model.gd`. Puppy Kraft's TODO lists "overlap with Dulce's
+      Adventure" as a blocker for its own art direction.
 - [ ] **Store currency name** (§13.5) — "Treats" is a placeholder. Blocks
       `STORE_CURRENCY` (Milestone 7).
 - [ ] **Standalone title and user dir** (§13.6) —
@@ -251,24 +256,34 @@ on.
       play a few seeds by hand to tune the ramp (150 m per difficulty step is
       a starting point).
 
-## Milestone 4 — Dulce (§7.2, §9.6) — waits on her real look
+## Milestone 4 — Dulce (§7.2, §9.6)
 
-- [ ] Blender model + generator script in `tools/blender/`; `dulce.glb` in
-      `assets/models/`.
-- [ ] `world/dulce_model.gd` — idle, trot, sprint, jump-up, apex, fall, land,
+- [x] ~~Blender model + generator script in `tools/blender/`; `dulce.glb` in
+      `assets/models/`.~~ Replaced by a procedural rig (owner decision above).
+- [x] `world/dulce_model.gd` — idle, trot, sprint, jump-up, apex, fall, land,
       stomp-bounce, hit, tumble, eat, victory sit; Full belly morph; collar
-      socket; ear and tail motion.
-- [ ] Reduced motion: no ear flop, tail wag or squash, but jump, fall and run
-      stay distinguishable.
-- [ ] `world/paw_particles.gd` — footstep dust, landing puff, crumbs; bounded,
-      shadow-free, no per-frame allocation.
-- [ ] `dulce_audio.gd` — yip, land, boing (pitch climbs with the chain),
-      munch, gulp, whine, heart chime, biome fanfare, tumble.
-- [ ] Audio captions (§9.5) for hit, heart lost, heart gained, Full
-      gained/lost, stomp chain, biome reached and run over.
-- [ ] `world/pest_models.gd` — pigeon and gnome, readable by silhouette.
+      socket; ear and tail motion. Pivots per head, ear, leg, tail and
+      collar; `pose_for(state)` picks the pose; events add short reactions.
+- [x] Reduced motion: no ear flop, tail wag or squash, but jump, fall and run
+      stay distinguishable (`tests/dulce_model_test.gd` checks both).
+- [x] `world/paw_particles.gd` — footstep dust, landing puff, crumbs and
+      feather poofs; one 64-slot pool, shadow-free, no per-frame allocation.
+- [x] `dulce_audio.gd` — yip, land, boing (pitch climbs with the chain),
+      munch, gulp, whine, heart chime, biome fanfare, tumble, plus bump and
+      pop; all synthesized at load.
+- [x] Audio captions (§9.5) for hit, heart lost, heart gained, Full
+      gained/lost, stomp chain and run over, from one table
+      (`DulceAudio.cue_for()`, `tests/dulce_audio_test.gd`). The biome
+      caption is in the table; Milestone 5 sends the event.
+- [x] `world/pest_models.gd` — pigeon and gnome, readable by silhouette; the
+      pigeon now waddles (parked by reduced motion).
 - [ ] **Exit:** the grey box is gone. Dulce reads clearly at phone size and
       every meaningful sound has a caption.
+      *On 4.6.2:* the grey box is gone. Every pose renders distinctly in a
+      contact sheet, and she reads mid-leap in portrait at phone width (about
+      7% of it, near Mario's NES share; her hit box sets the limit). Captions
+      are tested. Still to do: hear the cues on real speakers, check her
+      size by hand on a phone, and confirm on Godot 4.7.
 
 ## Milestone 5 — Biomes 2–5 (§4.3, §5.3–§5.4, §7.1)
 

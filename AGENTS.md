@@ -36,7 +36,9 @@ Only what exists so far. `DESIGN.md` §6 is the target layout.
 | `run_hud.gd` | Hearts, burgers and the FULL badge over the sky |
 | `world_view.gd` | Isolated `SubViewport`, forward-only orthographic camera, one mesh per chunk |
 | `dulce_art.gd` | Palette, `WORLD_SCALE`, `world_point()`, materials |
-| `world/dulce_model.gd` | Dulce in 3D (grey box until the Milestone 4 GLB): blink, Full, tumble |
+| `world/dulce_model.gd` | Dulce's procedural rig: one pivot per part, `pose_for(state)`, reactions |
+| `world/paw_particles.gd` | One 64-slot pool of dust, crumbs and feathers; off under reduced motion |
+| `dulce_audio.gd` | Synthesized cues, and `cue_for(event)`: each event's sound and caption |
 | `world/pest_models.gd`, `world/food_models.gd` | Grey-box pests, food and Lunchboxes |
 | `assets/icons` | Original white-stroke HUD and touch SVGs |
 | `world/mesh_builder.gd`, `world/daylight.gd` | Adapted copies of Cube Trials' batching and sun rig |
@@ -56,6 +58,8 @@ godot --headless --path . --script res://games/dulces_adventure/tests/dulce_pest
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_records_test.gd -- --game=all
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_chunks_test.gd -- --game=all
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_stream_test.gd -- --game=all
+godot --headless --path . --script res://games/dulces_adventure/tests/dulce_model_test.gd -- --game=all
+godot --headless --path . --script res://games/dulces_adventure/tests/dulce_audio_test.gd -- --game=all
 godot --path . -- --game=dulces_adventure --dulce-seed=42   # replay one seed
 ```
 
@@ -111,6 +115,11 @@ every game in the catalog, so this one is covered as soon as `game.gd` exists.
 - Assists (Auto-run, Kind pits, Game speed) never block achievements.
 
 ## Accessibility
+
+A new run event that makes a sound decides its caption in
+`DulceAudio.cue_for()`, and `dulce_audio_test.gd` lists the events that must
+have one. Dulce's look lives in `dulce_art.gd` (coat colours) and
+`world/dulce_model.gd` (shapes); photos of the real dog may still change it.
 
 Reduced motion removes ear flop, tail wag, squash, camera easing and parallax
 drift, but jump, fall and run must stay distinguishable. Intense effects off

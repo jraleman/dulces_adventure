@@ -507,7 +507,7 @@ func _eat(kind: String, cell: Vector2i) -> void:
 func _gain_heart(source: String, capped_points: int) -> void:
 	if hearts < MAX_HEARTS:
 		hearts += 1
-		_events.append({"kind": "heart", "source": source})
+		_events.append({"kind": "heart", "source": source, "hearts": hearts})
 	elif capped_points > 0:
 		item_points += capped_points
 		_events.append({"kind": "heart_capped", "source": source, "points": capped_points})
@@ -596,4 +596,4 @@ func _end_run() -> void:
 	over = true
 	tumble_left = TUMBLE_SECONDS
 	invulnerable_left = 0.0
-	_events.append({"kind": "run_over"})
+	_events.append({"kind": "run_over", "distance": floori(distance_m())})
