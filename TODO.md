@@ -75,7 +75,7 @@ Don't start work that depends on an unanswered one.
       says "a chunk with no marker gets one at its entry seam". Pick one
       rule. As written, the §5.1 `PIT_HOP` example has no `S` and fails the
       validator. *Chose explicit `S` only, standing on solid ground (DESIGN
-      §5.2). Fix `PIT_HOP` when Milestone 3 writes real chunks.*
+      §5.2). `PIT_HOP` now has its `S` markers, in DESIGN §5.1 and in the library.*
 - [x] The §5.1 legend has no glyph for the **Golden Bone**, and doesn't say
       how a `?` Lunchbox picks a burger or a Big Burger (seeded roll? an
       authored variant glyph?). Add both before writing chunks. *Chose `+`
@@ -221,19 +221,35 @@ on.
 
 ## Milestone 3 — Stream (§5.1–§5.2)
 
-- [ ] `chunk_library.gd` — the one legend const (plus the Golden Bone glyph),
-      chunks as const string grids, seam at row 4.
-- [ ] `chunk_library.validate(chunk)` — seams, max gap and height against
-      `run_state` constants with a 1-tile margin, no spawns in solid tiles,
-      safe ground.
-- [ ] **≥ 15 Backyard chunks** across difficulties, plus breather chunks.
-- [ ] `level_stream.gd` — seeded assembly, ~3 screens ahead, frees 2 behind,
-      difficulty ramp by distance, no immediate repeats, a breather at least
-      every 4, safe-ground tracking.
-- [ ] The seed on the results panel, and a debug flag to replay it.
-- [ ] `tests/dulce_chunks_test.gd` (every chunk), `tests/dulce_stream_test.gd`.
+- [x] `chunk_library.gd` — the one legend const (plus the Golden Bone glyph),
+      chunks as const string grids, seam at row 4. The grey-box course is
+      gone; its pieces became chunks.
+- [x] `chunk_library.validate(chunk)` — a reachability search that quotes
+      `run_state`'s jump arithmetic with a 1-tile margin (pits ≤ 5, ledges
+      ≤ 3), plus seams, legend, pests standing on something, gnomes with
+      room beside them, and every `S` on solid ground, reachable and not a
+      dead end. `route_problems()` runs the same search over whole runs.
+- [x] **≥ 15 Backyard chunks** across difficulties, plus breather chunks:
+      18 chunks over difficulties 1–4, 3 breathers, and the fixed
+      `backyard_start`.
+- [x] `level_stream.gd` — seeded assembly, ~3 screens ahead, frees 2 behind,
+      difficulty ramp by distance, no immediate repeats, a breather every
+      4th chunk, safe-ground tracking (`run_state.forget_before()` keeps the
+      respawn point).
+- [x] The seed in the results stats ("Course seed"), and
+      `-- --dulce-seed=<n>` to replay it.
+- [x] `tests/dulce_chunks_test.gd` (every chunk, and the shapes the
+      validator must reject), `tests/dulce_stream_test.gd`.
+- [x] The view bakes one terrain mesh per chunk, so a new chunk or an opened
+      Lunchbox re-bakes one chunk, not the run.
 - [ ] **Exit:** a 1,000 m Backyard run on one seed is identical twice, and
       no generated pit is impossible.
+      *On 4.6.2:* `dulce_stream_test` builds 1,000 m twice per seed and
+      compares chunk ids and tiles, and walks eight seeds' kilometres end to
+      end with the validator; all pass. A scripted seed-42 run plays through
+      to results in the real scene. Still to do: confirm on Godot 4.7, and
+      play a few seeds by hand to tune the ramp (150 m per difficulty step is
+      a starting point).
 
 ## Milestone 4 — Dulce (§7.2, §9.6) — waits on her real look
 

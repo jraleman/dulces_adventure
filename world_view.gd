@@ -51,7 +51,11 @@ var world_camera: Camera3D
 var world: Node3D
 var dulce: DulceModel
 var daylight: Daylight
-var _terrain: MeshInstance3D
+## One baked terrain surface per live chunk, by the chunk's first column, so
+## placing a chunk or opening a Lunchbox re-bakes one chunk, not the run.
+var _chunk_meshes: Dictionary[int, MeshInstance3D] = {}
+## `Vector2i(first column, width)` of every live chunk.
+var _chunk_ranges: Array[Vector2i] = []
 ## Pixels at the bottom of this control covered by touch buttons.
 var bottom_inset := 0.0
 var _finish: StandardMaterial3D
@@ -84,10 +88,6 @@ func _ready() -> void:
 	world_viewport.add_child(world)
 	daylight = Daylight.new(world)
 	_finish = Art.material()
-	_terrain = MeshInstance3D.new()
-	_terrain.name = "Terrain"
-	_terrain.material_override = _finish
-	world.add_child(_terrain)
 	dulce = DulceModel.new()
 	world.add_child(dulce)
 	_shadow = MeshInstance3D.new()
@@ -120,47 +120,105 @@ func _ready() -> void:
 	resized.connect(_resize_world)
 	_resize_world()
 	if state != null:
+		if _chunk_ranges.is_empty():
+			_chunk_ranges = _whole_grid()
 		rebuild_terrain()
 
 
 ## Points the view at a run, and snaps the camera to it on the next frame.
-func configure(run: State) -> void:
+## `chunks` are the live chunks as `Vector2i(first column, width)`; without
+## them the whole grid is baked as one stretch.
+func configure(run: State, chunks: Array[Vector2i] = []) -> void:
 	var fresh := run != state
 	state = run
 	_camera_ready = false
 	if fresh:
-		for node: Node3D in _items.values() + _pests.values():
+		for node: Node3D in _items.values() + _pests.values() + _chunk_meshes.values():
 			node.queue_free()
 		_items.clear()
 		_pests.clear()
+		_chunk_meshes.clear()
+		_chunk_ranges.clear()
+	if fresh:
+		_chunk_ranges = chunks.duplicate() if not chunks.is_empty() else _whole_grid()
 	if is_inside_tree():
-		rebuild_terrain()
+		# A respawn re-frames the same run; only a new run needs re-baking.
+		if fresh:
+			rebuild_terrain()
 		present(0.0)
 
 
-## Rebakes every live tile into one batched surface.
-func rebuild_terrain() -> void:
-	if _terrain == null or state == null:
+## Matches the baked chunks to the live ones: new chunks are baked, freed ones
+## dropped, and the rest left alone.
+func sync_chunks(chunks: Array[Vector2i]) -> void:
+	_chunk_ranges = chunks.duplicate()
+	if world == null or state == null:
 		return
-	_terrain.mesh = terrain_mesh(state.grid)
+	var live := {}
+	for chunk in _chunk_ranges:
+		live[chunk.x] = true
+		if not _chunk_meshes.has(chunk.x):
+			_bake(chunk)
+	for column: int in _chunk_meshes.keys():
+		if not live.has(column):
+			_chunk_meshes[column].queue_free()
+			_chunk_meshes.erase(column)
 
 
-## One surface for the whole grid: soil in a checker so distance reads, a grass
-## cap on every exposed top, and thin planks for one-way platforms. A dark back
-## wall below the seam makes every pit read as a hole in the ground.
-static func terrain_mesh(grid: Grid) -> ArrayMesh:
+## Re-bakes the chunk holding `column`, as when a Lunchbox there is opened.
+func rebuild_chunk_at(column: int) -> void:
+	for chunk in _chunk_ranges:
+		if column >= chunk.x and column < chunk.x + chunk.y:
+			_bake(chunk)
+			return
+
+
+## Re-bakes every live chunk.
+func rebuild_terrain() -> void:
+	if world == null or state == null:
+		return
+	for node: MeshInstance3D in _chunk_meshes.values():
+		node.queue_free()
+	_chunk_meshes.clear()
+	sync_chunks(_chunk_ranges)
+
+
+func _bake(chunk: Vector2i) -> void:
+	var node: MeshInstance3D = _chunk_meshes.get(chunk.x)
+	if node == null:
+		node = MeshInstance3D.new()
+		node.name = "Chunk_%d" % chunk.x
+		node.material_override = _finish
+		world.add_child(node)
+		_chunk_meshes[chunk.x] = node
+	node.mesh = terrain_mesh(state.grid, chunk.x, chunk.y)
+
+
+func _whole_grid() -> Array[Vector2i]:
+	var columns := Vector2i(1 << 30, -(1 << 30))
+	for cell in state.grid.cells():
+		columns = Vector2i(mini(columns.x, cell.x), maxi(columns.y, cell.x))
+	if columns.y < columns.x:
+		return []
+	return [Vector2i(columns.x, columns.y - columns.x + 1)]
+
+
+## One surface for `width` columns from `first`: soil in a checker so distance
+## reads, a grass cap on every exposed top, and thin planks for one-way
+## platforms. A dark back wall below the seam makes every pit read as a hole.
+static func terrain_mesh(grid: Grid, first: int, width: int) -> ArrayMesh:
 	var mesh := MeshBuilder.new()
 	var cell_size := Grid.TILE * Art.WORLD_SCALE
-	var columns := Vector2i(1 << 30, -(1 << 30))
-	for cell in grid.cells():
-		columns = Vector2i(mini(columns.x, cell.x), maxi(columns.y, cell.x))
-	if columns.y >= columns.x:
-		var depth := (grid.bottom_row + 1 - ChunkLibrary.SEAM_ROW + BEDROCK_TILES) * cell_size
-		var width := (columns.y - columns.x + 1) * cell_size
-		var corner := Art.world_point(Vector2(columns.x, ChunkLibrary.SEAM_ROW) * Grid.TILE)
-		mesh.box(corner + Vector3(width * 0.5, -depth * 0.5, -Art.GROUND_DEPTH * 0.5 - 0.05),
-			Vector3(width, depth, 0.1), Art.PIT)
-	for cell in grid.cells():
+	var depth := (grid.bottom_row + 1 - ChunkLibrary.SEAM_ROW + BEDROCK_TILES) * cell_size
+	var corner := Art.world_point(Vector2(first, ChunkLibrary.SEAM_ROW) * Grid.TILE)
+	mesh.box(corner + Vector3(width * cell_size * 0.5, -depth * 0.5, -Art.GROUND_DEPTH * 0.5 - 0.05),
+		Vector3(width * cell_size, depth, 0.1), Art.PIT)
+	var cells: Array[Vector2i] = []
+	for column in range(first, first + width):
+		for row in grid.bottom_row + 1:
+			if grid.tile(Vector2i(column, row)) != Grid.EMPTY:
+				cells.append(Vector2i(column, row))
+	for cell in cells:
 		var centre := Art.world_point((Vector2(cell) + Vector2(0.5, 0.5)) * Grid.TILE)
 		var kind := grid.tile(cell)
 		if kind == Grid.ONE_WAY:
@@ -175,9 +233,9 @@ static func terrain_mesh(grid: Grid) -> ArrayMesh:
 		if cell.y == grid.bottom_row:
 			# The ground carries on below the frame, so a pit reads as a hole
 			# rather than a gap onto sky.
-			var depth := BEDROCK_TILES * cell_size
-			mesh.box(centre - Vector3(0, (cell_size + depth) * 0.5, 0),
-				Vector3(cell_size, depth, Art.GROUND_DEPTH), Art.SOIL_DARK)
+			var bedrock := BEDROCK_TILES * cell_size
+			mesh.box(centre - Vector3(0, (cell_size + bedrock) * 0.5, 0),
+				Vector3(cell_size, bedrock, Art.GROUND_DEPTH), Art.SOIL_DARK)
 		if not grid.is_solid(cell + Vector2i.UP):
 			var cap := centre + Vector3(0, cell_size * 0.5 + 0.04, 0)
 			mesh.box(cap, Vector3(cell_size, 0.12, Art.GROUND_DEPTH + 0.04), Art.LETTUCE)

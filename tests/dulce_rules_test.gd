@@ -37,7 +37,6 @@ func _run() -> void:
 	_test_stomp_chain()
 	_test_run_end()
 	_test_score_and_clean_distance()
-	_test_feel_course()
 	_finish()
 
 
@@ -297,24 +296,6 @@ func _test_score_and_clean_distance() -> void:
 		"Score is whole metres x %d plus food and stomps." % State.DISTANCE_POINTS)
 	_hold(state, 1.0, 1.0)
 	_expect(state.best_clean_m == clean, "A hit restarts the clean stretch from zero.")
-
-
-func _test_feel_course() -> void:
-	var state := ChunkLibrary.feel_run()
-	var laps := ChunkLibrary.FEEL_LAPS
-	var burgers := 0
-	for kind: String in state.items.values():
-		burgers += int(kind == State.BURGER)
-	for kind: String in state.lunchboxes.values():
-		burgers += int(kind == State.BURGER)
-	_expect(burgers == 25 * laps, "The grey-box course holds 25 burgers a lap (%d)." % burgers)
-	_expect(burgers >= State.BURGERS_PER_HEART,
-		"Enough burgers that Hungry Hungry can be earned on it.")
-	_expect(state.pests.list.size() == 5 * laps and state.safe_points.size() == 12 * laps,
-		"Every lap brings its pests and its safe ground.")
-	# One tile is one metre.
-	_expect(ChunkLibrary.feel_rows()[0].length() > 400,
-		"The course is longer than Off the Leash's 400 m.")
 
 
 # --------------------------------------------------------------------------

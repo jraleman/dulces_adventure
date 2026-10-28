@@ -4,23 +4,28 @@ extends GameShell
 ##
 ## The shell's countdown and lives pool are off (`uses_shell_round_rules =
 ## false`): the model owns hearts, and a run ends through the shell's normal
-## `_end_round()` once her last heart is gone and the tumble has played. Until
-## the Milestone 3 stream, every run is the grey-box course.
+## `_end_round()` once her last heart is gone and the tumble has played. Each
+## run is a fresh seed of the chunk stream; `--dulce-seed=<n>` after `--` on
+## the command line replays one.
 
 const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
 const State = preload("res://games/dulces_adventure/run_state.gd")
-const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
+const LevelStream = preload("res://games/dulces_adventure/level_stream.gd")
 const WorldView = preload("res://games/dulces_adventure/world_view.gd")
 const RunControls = preload("res://games/dulces_adventure/run_controls.gd")
 const RunHud = preload("res://games/dulces_adventure/run_hud.gd")
 const Records = preload("res://games/dulces_adventure/run_records.gd")
 const Art = preload("res://games/dulces_adventure/dulce_art.gd")
 
-## Where the grey-box course starts, for results copy ("from the Backyard").
+## Where every run starts until Milestone 5's start points, for results copy.
 const START_TITLE := "the Backyard"
+## Debug flag: replay a seed shown on the results panel.
+const SEED_ARGUMENT := "--dulce-seed="
 const HIT_SHAKE := 7.0
 
 var _state: State
+var _stream: LevelStream
+var _seed := 0
 var _view: WorldView
 var _controls: RunControls
 var _run_hud: RunHud
@@ -50,13 +55,14 @@ func _load_round_settings() -> void:
 
 
 func _build_playfield() -> void:
-	_state = ChunkLibrary.feel_run()
+	_stream = LevelStream.new(_seed)
+	_state = _stream.start()
 	_view = WorldView.new()
 	_view.name = "RunView"
 	_view.reduced_motion = _reduced_motion_enabled
 	_view.intense_effects = _intense_effects_enabled
 	_playfield.add_child(_view)
-	_view.configure(_state)
+	_view.configure(_state, _live_chunks())
 	var overlay := _hud.get_node("Overlay") as Control
 	_run_hud = RunHud.new()
 	overlay.add_child(_run_hud)
@@ -71,7 +77,9 @@ func _build_playfield() -> void:
 func _reset_round_state() -> void:
 	_jump_pending = false
 	_ended = false
-	_state = ChunkLibrary.feel_run()
+	_seed = _requested_seed()
+	_stream = LevelStream.new(_seed)
+	_state = _stream.start()
 	_state.auto_run = _auto_run
 	_state.kind_pits = _kind_pits
 	# Applied per run, so a jump never changes speed half-way through.
@@ -81,8 +89,23 @@ func _reset_round_state() -> void:
 		_controls.set_enabled(true)
 	if _view != null:
 		_view.set_day_night_enabled(_day_night_enabled)
-		_view.configure(_state)
+		_view.configure(_state, _live_chunks())
 	_sync_hud()
+
+
+## The debug seed when one was passed, otherwise a fresh one every run.
+func _requested_seed() -> int:
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with(SEED_ARGUMENT):
+			return int(argument.trim_prefix(SEED_ARGUMENT))
+	return LevelStream.random_seed()
+
+
+func _live_chunks() -> Array[Vector2i]:
+	var chunks: Array[Vector2i] = []
+	for chunk in _stream.placed:
+		chunks.append(Vector2i(int(chunk["column"]), int(chunk["width"])))
+	return chunks
 
 
 func _activate_round() -> void:
@@ -100,6 +123,8 @@ func _update_round(delta: float, _time_left: float) -> void:
 		_on_run_event(event)
 	_view.present(delta)
 	_state.push_left_limit(_view.left_edge())
+	if _stream.update(_state, _view.left_edge()):
+		_view.sync_chunks(_live_chunks())
 	_sync_hud()
 	if _state.run_finished() and not _ended:
 		_ended = true
@@ -114,7 +139,7 @@ func _on_run_event(event: Dictionary) -> void:
 			_state.left_limit = -INF
 			_view.configure(_state)
 		"lunchbox":
-			_view.rebuild_terrain()
+			_view.rebuild_chunk_at(event["cell"].x)
 		"full":
 			_show_announcement("FULL!", Art.MUSTARD)
 		"heart":
@@ -247,6 +272,7 @@ func _player_stats(player: int) -> Dictionary:
 			{"label": "Longest clean stretch", "value": "%d m" % floori(_state.best_clean_m)},
 			{"label": "Best distance", "value": "%d m" % maxi(
 				int(_best.get("distance", 0)), floori(_state.distance_m()))},
+			{"label": "Course seed", "value": str(_seed)},
 		],
 	}
 

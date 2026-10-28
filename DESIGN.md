@@ -234,7 +234,7 @@ const PIT_HOP := {
 		"................",
 		"........B.......",
 		"......=====.....",
-		"...........p....",
+		".S.........p.S..",
 		"####...#########",
 		"####...#########",
 	],
@@ -251,21 +251,31 @@ same way every time. A pest or `S` glyph stands on the bottom of its cell. Every
 
 ### 5.2 Streaming — `level_stream.gd`
 
-- A run has a **seed** (random per run; shown on the results panel so a
-  great run can be replayed via a debug flag, and so tests are deterministic).
+- A run has a **seed** (random per run, 0–999,999; shown in the results
+  stats so a great run can be replayed with `-- --dulce-seed=<n>`, and so
+  tests are deterministic). Which chunk comes next depends only on the seed
+  and the chunks already placed, never on how the run is played.
 - The stream keeps ~3 screens of chunks ahead of the camera and frees chunks
   2 screens behind. The model keeps only the live tiles.
-- **Difficulty ramps with distance**: the chunk picker weights by
-  `difficulty <= 1 + distance_m / 150` *(tune)*, never repeats a chunk
-  twice in a row, and inserts a flat "breather" chunk at least every 4.
+- **Difficulty ramps with distance**: the chunk picker draws uniformly from
+  the chunks with `difficulty <= 1 + distance_m / 150` *(tune)*, never
+  repeats a chunk twice in a row, and every 4th chunk is a flat "breather"
+  (no pits, no pests). Breathers are only ever placed by that rule. Every
+  run opens on the fixed `backyard_start` chunk.
 - **Safe-ground points**: each chunk declares `S` markers; pit respawn uses
   the last one passed. Every chunk declares at least one; there is no
   automatic marker, and an `S` must stand on solid ground, never over a pit.
 - **Validator** (`chunk_library.validate(chunk)`, called by tests on every
-  chunk): seam heights match, every gap ≤ the max running-jump width with a
-  1-tile margin, every required ledge ≤ the max jump height with a margin,
-  no enemy spawns inside solid tiles, at least one `S`. This is pillar 2 as
-  code.
+  chunk): six rows, 16–48 wide, legend glyphs only, open ground on the seam
+  at both ends. Then a reachability search over every place she can stand:
+  a move counts only if `run_state.gd`'s own `jump_height()` and
+  `jump_reach()` clear it with a 1-tile margin across and up, over columns
+  with nothing solid in the way. The exit must be reachable from the entry.
+  Every `S` must stand on solid ground, be reachable, and not be a dead end.
+  Pests must stand on something, and a gnome needs room to land on either
+  side. In practice that allows pits of up to 5 tiles and ledges of up to 3.
+  The same search (`route_problems()`) walks whole generated runs in the
+  stream tests. This is pillar 2 as code.
 
 ### 5.3 Biomes
 
@@ -314,7 +324,7 @@ run_state.gd                # node-free 120 Hz body, hits, hearts, scoring
 pests.gd                    # node-free enemy behaviours
 chunk_library.gd            # authored chunk grids, legend, validator
 level_stream.gd             # seeded assembly, ramp, safe-ground, live tile window
-world_view.gd               # isolated SubViewport, orthographic camera, culling
+world_view.gd               # isolated SubViewport, orthographic camera, one baked mesh per chunk
 run_controls.gd             # keyboard, gamepad, multitouch
 run_hud.gd                  # hearts, distance, burgers, score, pause
 dulce_audio.gd              # synthesized cues

@@ -29,11 +29,12 @@ Only what exists so far. `DESIGN.md` §6 is the target layout.
 | `run_state.gd` | Node-free 120 Hz body and run rules: hearts, Full, food, stomps, score |
 | `pests.gd` | Node-free pest behaviours (pigeon, gnome so far) |
 | `tile_grid.gd` | Live tiles the body collides with, Lunchboxes included |
-| `chunk_library.gd` | The legend, `build()` and authored terrain (for now the grey-box course) |
+| `chunk_library.gd` | The legend, the authored chunks, `build()` and the fairness validator |
+| `level_stream.gd` | Seeded chunk assembly: the live window, the ramp, breathers |
 | `run_records.gd` | Best runs in `user://dulces_adventure.cfg`; merges, never regresses |
 | `run_controls.gd` | Keyboard, gamepad and touch buttons into model inputs; no autoloads |
 | `run_hud.gd` | Hearts, burgers and the FULL badge over the sky |
-| `world_view.gd` | Isolated `SubViewport`, forward-only orthographic camera, terrain bake |
+| `world_view.gd` | Isolated `SubViewport`, forward-only orthographic camera, one mesh per chunk |
 | `dulce_art.gd` | Palette, `WORLD_SCALE`, `world_point()`, materials |
 | `world/dulce_model.gd` | Dulce in 3D (grey box until the Milestone 4 GLB): blink, Full, tumble |
 | `world/pest_models.gd`, `world/food_models.gd` | Grey-box pests, food and Lunchboxes |
@@ -53,7 +54,14 @@ godot --headless --path . --script res://games/dulces_adventure/tests/dulce_phys
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_rules_test.gd -- --game=all
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_pests_test.gd -- --game=all
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_records_test.gd -- --game=all
+godot --headless --path . --script res://games/dulces_adventure/tests/dulce_chunks_test.gd -- --game=all
+godot --headless --path . --script res://games/dulces_adventure/tests/dulce_stream_test.gd -- --game=all
+godot --path . -- --game=dulces_adventure --dulce-seed=42   # replay one seed
 ```
+
+A new or edited chunk must pass `dulce_chunks_test.gd`. If the validator
+rejects it, widen or lower the chunk, never the validator: the validator is
+the "always fair" pillar.
 
 A test or a scripted run that can finish a run writes the player's real
 `dulces_adventure.cfg` and `achievements.cfg`. Point `run_records.gd` at a

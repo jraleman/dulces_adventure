@@ -148,6 +148,21 @@ func add_course(course: Dictionary) -> void:
 		_next_safe += 1
 
 
+## Drops everything left of `column`, as the stream frees chunks behind the
+## camera. The safe ground she would respawn on is always kept.
+func forget_before(column: int) -> void:
+	for cell: Vector2i in items.keys():
+		if cell.x < column:
+			items.erase(cell)
+	for cell: Vector2i in lunchboxes.keys():
+		if cell.x < column:
+			lunchboxes.erase(cell)
+	pests.clear_before(column * Grid.TILE)
+	while _next_safe > 1 and safe_points[0].x < column * Grid.TILE:
+		safe_points.remove_at(0)
+		_next_safe -= 1
+
+
 ## Puts the body at rest at `point`, as a respawn does.
 func place(point: Vector2) -> void:
 	position = point
