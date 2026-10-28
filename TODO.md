@@ -1,0 +1,328 @@
+# Dulce's Adventure — TODO
+
+Progress tracker for implementing [`DESIGN.md`](DESIGN.md). Sections follow the
+milestones in DESIGN §12, with a scaffolding phase first and a **Fixed stages**
+milestone the design does not have yet (see the owner's answers below).
+Milestones 1–8 are **v1**. Tick a box only when the item works **and** its
+tests pass. Each phase ends with an exit check.
+
+`§n` points at the matching section of `DESIGN.md`. Run commands from
+`godot-base/`. Framework rules from the root `AGENTS.md` still apply.
+
+---
+
+## Owner decisions (DESIGN §13)
+
+Some of these fix names, keys or scope that can't change once the game ships.
+Don't start work that depends on an unanswered one.
+
+- [x] **Endless vs authored** (§13.2) — **both.** Endless seeded runs, plus
+      **one fixed, finishable stage per biome (5)**, built from the same
+      authored chunks in a fixed order and ending at a food-truck goal.
+- [x] **Choosing a run** — endless start points and fixed stages share the
+      one manifest `levels` list ("Endless — Backyard", "Stage 1 — Backyard",
+      …), gated by achievements. No framework change.
+- [x] **Hearts** (§13.3) — 3, with the Full buffer. Max 3.
+- [x] **Distance from a later start** (§5.4) — **relative everywhere.**
+      Score, best distance and the reach achievements all count from the
+      start point. So a later start never unlocks anything a Backyard run
+      couldn't. It's practice, labelled "from the Park".
+- [x] **Hot seat** (§13.4) — v2. v1 is solo (`supports_multiplayer = false`).
+- [ ] **Dulce's real look** (§13.1) — reference photos for coat, ears and
+      markings. Blocks the final model (Milestone 4). Puppy Kraft's TODO
+      lists "overlap with Dulce's Adventure" as a blocker for its own art
+      direction, so settle Dulce's look first.
+- [ ] **Store currency name** (§13.5) — "Treats" is a placeholder. Blocks
+      `STORE_CURRENCY` (Milestone 7).
+- [ ] **Standalone title and user dir** (§13.6) —
+      `"DeskCanSaw Games/Dulce's Adventure"`, with an apostrophe in
+      `custom_user_dir_name`. It can never change after the first ship.
+      Blocks Milestone 8.
+- [ ] **Stage gates** — proposal: Stage 1 open, Stage N+1 unlocks when
+      Stage N is cleared. That needs five new permanent achievement keys
+      (e.g. `dulces_adventure_cleared_backyard` … `_cleared_market`). Confirm
+      the keys and titles before Milestone 6.
+- [ ] **Stage headline** — a stage has a fixed length, so distance can't be
+      its headline. Is it clear time, score or burgers? This decides the
+      results panel, the stage share card and what `save_files` stores.
+      Blocks Milestone 6.
+- [ ] **Stage failure** — does losing the last heart in a stage end it with
+      no clear, like an endless run, or restart at the last safe ground?
+- [ ] Fold every answer above into `DESIGN.md` (§1, §3, §4.5, §5.4, §6.3,
+      §9.1, §10, §12, §13) so the design and this list agree.
+
+## Discrepancies found while planning
+
+- [ ] The project targets Godot **4.7**, but this machine has **4.6.2**
+      (`/usr/bin/godot`). Install 4.7 before trusting any test result. On
+      4.6.2, **with no Dulce code present**, `accessibility`, `game_shell`,
+      `lives_mode` and `visual_effects` segfault, `saves_test` fails
+      (`saves.gd` parse error, touch-target sizes) and `game_select_test`
+      fails (Back button 42 px). Until 4.7 is installed, a change is checked
+      by diffing against that baseline, and the four crashing suites are run
+      with `--game=dulces_adventure` (only Dulce in the catalog).
+- [ ] `tests/instructions_video_test.gd` requires **every** game to ship a
+      walkthrough clip and poster, so it fails from the moment `game.gd`
+      exists until Dulce has one. Record a grey-box clip at the end of
+      Milestone 2 (scripted with `tools/tutorial_driver.gd`) rather than
+      faking one, and re-record it in Milestone 7.
+- [ ] `character_preview_scene_path` (§6.3) is only used when the manifest
+      declares `characters`. `mode_select.gd` returns early when
+      `GameSession.character_options()` is empty. The outfit-on-the-plinth
+      preview needs one `characters` entry (Dulce). A single-entry picker
+      would then show too. Check how that looks, or drop the preview.
+- [ ] The chunk validator needs at least one `S` (§5.2), but the stream also
+      says "a chunk with no marker gets one at its entry seam". Pick one
+      rule. As written, the §5.1 `PIT_HOP` example has no `S` and fails the
+      validator.
+- [ ] The §5.1 legend has no glyph for the **Golden Bone**, and doesn't say
+      how a `?` Lunchbox picks a burger or a Big Burger (seeded roll? an
+      authored variant glyph?). Add both before writing chunks.
+- [ ] The §8 table lists gamepad buttons, but Cube Trials polls the gamepad
+      directly in `gameplay.gd`, so those buttons aren't rebindable in
+      Settings. Accept that (as Cube Trials does), or raise it as framework
+      data.
+- [ ] §9.2's "roughly `score / 100`" maps to `points_per_score = 0.01`.
+      There's no CPU, so `win_bonus` must be 0. Decide `round_bonus` and
+      `max_per_round`, and whether clearing a stage pays extra (that has to be
+      a `_round_points_earned` override).
+- [ ] With relative distance, the reach achievements are named after biomes
+      ("Off the Leash", PARK) but can be earned from any start. Run 400 m from
+      the Park and you get "reached_park" somewhere on Main Street. Keep the
+      keys (they're permanent) but check the titles and descriptions say
+      "run 400 m", not "reach the Park".
+- [ ] `save_files` (§6.3) describes "best distance and score from each start
+      point". Stages add clears and a best per stage. Agree on the
+      `user://dulces_adventure.cfg` layout before Milestone 2 writes it.
+
+---
+
+## Phase 0 — Scaffolding
+
+As soon as `game.gd` exists, `GameCatalog` loads it and every framework suite
+sweeps it. Start with a stub that passes them, and keep them green from then
+on.
+
+- [x] Commit `DESIGN.md` to the game repository.
+- [ ] Commit this `TODO.md`.
+- [x] A folder `AGENTS.md` with game-specific agent notes, as Chicken Pit has.
+- [x] `dulces_adventure_options.gd` — constants-only (§6, §8): `GAME_ID`,
+      tunable keys (auto-run, kind pits, game speed, day/night), binding keys
+      prefixed `dulces_adventure_`, an empty `LEVELS`, store and gallery for
+      now.
+- [x] `game.gd` — minimal manifest (§6.3): id, title, tagline,
+      `menu_order = 9`, `CONTROL_STYLE_CUSTOM_KEYS`,
+      `uses_shell_round_rules = false`, `supports_multiplayer = false`,
+      `supports_cpu_opponent = false`, tunables, bindings.
+- [x] `gameplay.tscn` (inherits `game_shell.tscn`) + `gameplay.gd` (`extends
+      GameShell`, `game_id()`, `super(value)` in the reduced-motion and
+      intense-effects overrides).
+- [x] A `tests/` folder and a smoke test that loads the manifest by path
+      (`tests/dulces_adventure_manifest_test.gd`).
+- [x] `godot --headless --path . --import`
+- [ ] **Exit:** all 15 framework suites exit 0 with `--game=all`, and
+      `godot --path . -- --game=dulces_adventure` opens the stub.
+      *Blocked on Godot 4.7.* On 4.6.2 every suite exits as it did before
+      Dulce existed, except `instructions_video_test` (no clip yet, see
+      above). `game_shell_test` and `visual_effects_test` pass with only
+      Dulce in the catalog.
+
+## Milestone 1 — Feel prototype (§4.1, §4.7, §6.1, §7.1) ⚠ the pillar
+
+- [x] `run_state.gd` (`RefCounted`, no autoloads, no nodes): fixed 120 Hz step
+      with an accumulator, every §4.1 constant at the top. Stomp bounce and
+      i-frame constants join in Milestone 2, with the rules that use them.
+  - [x] Walk/run speeds, ground accel/decel, air accel
+  - [x] Gravity, fall multiplier, fall cap
+  - [x] Variable jump: hold for full height, release to cut
+  - [x] Running-jump bonus
+  - [x] Coyote time and jump buffer
+  - [x] No double jump
+  - [x] AABB vs tile grid, plus one-way platforms (no slopes)
+  - [x] Game-speed scaling (70–100%)
+  - [x] Forward-only camera bound: Dulce can't pass the left edge (§4.7)
+- [x] A grey-box test course with gaps of 2–5 tiles, a ledge, a bump block and
+      one-way platforms: `chunk_library.gd` `FEEL_COURSE`, the file Milestone 3
+      grows into the library. Live tiles sit in `tile_grid.gd` (new; not in
+      DESIGN §6), which the stream will feed.
+- [x] `dulce_art.gd` — palette, `WORLD_SCALE = 0.025`, `world_point()`.
+- [x] `world/mesh_builder.gd` and `world/daylight.gd` — copied from
+      `cube_trials/world/` and adapted (no game-to-game dependency). Daylight
+      takes a palette dictionary, ready for the Milestone 5 biomes.
+- [x] `world_view.gd` — isolated `SubViewport`, orthographic side camera
+      with a slight downward tilt, forward-only scroll. The *left edge* is
+      what moves forward, so a resize can't leave it ahead of Dulce, and a
+      respawn re-frames the view. Pits get a dark back wall.
+- [x] A grey-box Dulce (`world/dulce_model.gd`, the file Milestone 4 fills
+      with the GLB) and a blob shadow that shrinks with height.
+- [x] `run_controls.gd` — keyboard (rebindable actions plus fixed arrow
+      keys) and gamepad (stick, D-pad, A jump, X / right trigger run).
+- [x] `tests/dulce_physics_test.gd` (§10), plus one-way platforms, walls,
+      ceiling bumps, the camera edge, Auto-run, pits, and checks that the
+      validator's `jump_height()` / `jump_reach()` match the real body.
+- [ ] **Exit:** jumping is fun with a grey box, according to two playtesters.
+      Record the measured max running-jump width and height here. The chunk
+      validator uses them.
+      Measured on the model: a full running jump rises **4.71 tiles** and
+      travels **6.22 tiles** back to take-off height; a standing jump rises
+      **3.80 tiles** (DESIGN §4.1's ~3.9 is the continuous figure). A tapped
+      jump is a hop of under a tile. *Playtest still to do:* run
+      `godot --path . -- --game=dulces_adventure`.
+
+## Milestone 2 — Rules (§4.2–§4.5, §9.1)
+
+- [ ] Hearts (3), the Full state, i-frames (opacity blink), pit fall and
+      respawn at the last safe ground, run end after the tumble.
+- [ ] The Kind pits assist.
+- [ ] Collectibles: burger, Big Burger, Golden Bone, Lunchbox bonk from below;
+      every 100 burgers gives a heart (points once capped).
+- [ ] Scoring: distance × 10 + items + stomps, stomp chain 200 → 1600 cap.
+      Distance counts from the start point.
+- [ ] `pests.gd` (node-free): Grumpy Pigeon and Garden Gnome; stomp vs side
+      hit.
+- [ ] `run_hud.gd` — hearts, distance, burgers, score, a Full icon; icons and
+      numbers, never colour alone.
+- [ ] `run_controls.gd` — first-pass multitouch buttons (keyboard and
+      gamepad are done).
+- [ ] `GameShell` hooks (§6.2) wired: end the run at `hearts == 0` through the
+      shell's normal end-of-round path, as Cube Trials does; `_round_totals`,
+      `_player_stats`, `_describe_round_outcome`, `_round_highlight_summary`.
+- [ ] Achievements registered (§9.1, all seven keys); the four reach
+      achievements, `combo` and `clean` awarded. Assists never block them.
+- [ ] Best runs in `user://dulces_adventure.cfg`, declared in `save_files`.
+- [ ] `tests/dulce_rules_test.gd`, `tests/dulce_pests_test.gd` (pigeon,
+      gnome).
+- [ ] **Exit:** a grey-box run with pits, two pests and burgers ends in
+      results with distance, score and achievements, and `saves_test.gd`
+      still passes.
+
+## Milestone 3 — Stream (§5.1–§5.2)
+
+- [ ] `chunk_library.gd` — the one legend const (plus the Golden Bone glyph),
+      chunks as const string grids, seam at row 4.
+- [ ] `chunk_library.validate(chunk)` — seams, max gap and height against
+      `run_state` constants with a 1-tile margin, no spawns in solid tiles,
+      safe ground.
+- [ ] **≥ 15 Backyard chunks** across difficulties, plus breather chunks.
+- [ ] `level_stream.gd` — seeded assembly, ~3 screens ahead, frees 2 behind,
+      difficulty ramp by distance, no immediate repeats, a breather at least
+      every 4, safe-ground tracking.
+- [ ] The seed on the results panel, and a debug flag to replay it.
+- [ ] `tests/dulce_chunks_test.gd` (every chunk), `tests/dulce_stream_test.gd`.
+- [ ] **Exit:** a 1,000 m Backyard run on one seed is identical twice, and
+      no generated pit is impossible.
+
+## Milestone 4 — Dulce (§7.2, §9.6) — waits on her real look
+
+- [ ] Blender model + generator script in `tools/blender/`; `dulce.glb` in
+      `assets/models/`.
+- [ ] `world/dulce_model.gd` — idle, trot, sprint, jump-up, apex, fall, land,
+      stomp-bounce, hit, tumble, eat, victory sit; Full belly morph; collar
+      socket; ear and tail motion.
+- [ ] Reduced motion: no ear flop, tail wag or squash, but jump, fall and run
+      stay distinguishable.
+- [ ] `world/paw_particles.gd` — footstep dust, landing puff, crumbs; bounded,
+      shadow-free, no per-frame allocation.
+- [ ] `dulce_audio.gd` — yip, land, boing (pitch climbs with the chain),
+      munch, gulp, whine, heart chime, biome fanfare, tumble.
+- [ ] Audio captions (§9.5) for hit, heart lost, heart gained, Full
+      gained/lost, stomp chain, biome reached and run over.
+- [ ] `world/pest_models.gd` — pigeon and gnome, readable by silhouette.
+- [ ] **Exit:** the grey box is gone. Dulce reads clearly at phone size and
+      every meaningful sound has a caption.
+
+## Milestone 5 — Biomes 2–5 (§4.3, §5.3–§5.4, §7.1)
+
+- [ ] `world/biome_props.gd` — Backyard, Park, Main Street, Boardwalk Pier,
+      Night Market; batched props and a far parallax backdrop of real
+      geometry.
+- [ ] Biome palettes in `world/daylight.gd`; the day/night toggle.
+- [ ] Distance-based biome changes with a banner and a gate set piece; loop
+      after the Night Market with difficulty still rising.
+- [ ] Food flavour per biome (hot dogs, tacos, fries, gold burgers).
+- [ ] Remaining pests: Squirrel, Robo-Vac (flip, kick, slide, bonk chain),
+      Seagull (swoop), Hot-Sauce Bottle (arc shot); their models.
+- [ ] Chunks for every biome, all through `validate()`.
+- [ ] `LEVELS` — endless start points ("Endless — Backyard" … "Endless —
+      Night Market"), gated by the reach achievements; distance relative.
+- [ ] `tools/capture_art.gd` — biome stills into `assets/levels/` for the
+      level icons. Dev-only.
+- [ ] Extend `tests/dulce_pests_test.gd` and `tests/dulce_chunks_test.gd`.
+- [ ] **Exit:** a strong player can run from the Backyard into the Night
+      Market, and each endless start unlocks from a fresh profile.
+
+## Milestone 6 — Fixed stages (owner decision; not in DESIGN yet)
+
+- [ ] Write the stages into `DESIGN.md` first: length (~300–500 m *(tune)*),
+      goal, headline, gates, failure rule.
+- [ ] One stage per biome: a fixed, ordered list of authored chunks, with
+      fixed Lunchbox contents and no random rolls.
+- [ ] The food-truck goal and a "cleared" end of round; results and outcome
+      text for a clear and for a run out of hearts.
+- [ ] `LEVELS` gains "Stage 1 — Backyard" … "Stage 5 — Night Market", gated
+      by the agreed stage-clear achievements.
+- [ ] Stage clears and per-stage bests in `user://dulces_adventure.cfg`.
+- [ ] Stage stills from `tools/capture_art.gd`.
+- [ ] `tests/dulce_stages_test.gd` — every stage's chunk list validates and
+      joins at the seams, the goal is reachable, a scripted clear unlocks the
+      next stage, bests never regress.
+- [ ] **Exit:** all five stages can be cleared from a fresh profile in
+      order, and the endless runs still work.
+
+## Milestone 7 — Shell features (§7.3, §9.1–§9.4)
+
+- [ ] Store (§9.2): currency (name per §13.5), slots collar, hat and bandana;
+      starter catalogue with the red collar as default; worn in the run, on
+      the plinth, on the share card and in the gallery; `store_preview.tscn`.
+- [ ] `characters` entry for Dulce + `character_preview.tscn` (see the
+      plinth discrepancy above).
+- [ ] Gallery (§9.3): Dulce (idle, Full), every pest, Lunchbox, Big Burger,
+      Golden Bone, a food truck; later biome props gated by reach
+      achievements; `gallery_stage.tscn` with `configure`, `set_view`,
+      `set_auto_spin`.
+- [ ] Share card (§9.4): `share_art.tscn`, Dulce in her outfit in the victory
+      sit, distance headline (or the stage headline), biome, burgers, score,
+      QR.
+- [ ] `GameTheme` (§7.3) + `assets/game-icon.png` captured from the model.
+- [ ] `intro.tscn` — the four story cards (§1).
+- [ ] Instructions copy through `manifest.text` keys.
+- [ ] Credits.
+- [ ] Tutorial video + poster (`tools/tutorial_driver.gd`,
+      `record_tutorials.ps1`).
+- [ ] `tests/dulce_scene_test.gd` (§10): loads under the shell, HUD binds,
+      pause, results, payout.
+- [ ] **Exit:** `store_test`, `gallery_test`, `share_card_test`,
+      `saves_test` and `single_game_test` pass with `--game=all`.
+
+## Milestone 8 — Polish and integration (§8, §9.5, §11) — v1 ships
+
+- [ ] Touch layout pass: buttons ≥ 44 physical px, multi-finger, clear of the
+      ground line; the one-time Auto-run hint on touchscreens; icons on
+      phones, key hints on wide screens.
+- [ ] Accessibility sweep against §9.5.
+- [ ] `tests/dulce_view_test.gd` *(window)* — Dulce visible and unobstructed,
+      portrait → ultrawide, touch buttons clear of the ground line.
+- [ ] `project.godot`: `config/name.dulces_adventure`,
+      `custom_user_dir_name.dulces_adventure` (after §13.6),
+      `config/icon.dulces_adventure`,
+      `dcs/build/single_game_id.dulces_adventure`,
+      `[share] stats_urls/dulces_adventure` (≤ 42 bytes).
+- [ ] `export_presets.cfg`: a standalone preset with the feature tag; exclude
+      `games/dulces_adventure/*` from the other presets; keep `tools/` out.
+- [ ] `.gitmodules` + gitlink (two commits: game repo, then `dcs_games`).
+- [ ] Root `AGENTS.md`: games table, submodules, options files, test table,
+      feature tags, blurb. Update `godot-base/README.md` if it lists games.
+- [ ] Write the folder `README.md` properly (it's a one-line stub).
+- [ ] **Exit:** all framework suites + all game suites exit 0 with
+      `--game=all`; window suites run without `--headless`.
+
+---
+
+## After v1 (§12 v2 candidates)
+
+- [ ] Slopes (model + validator).
+- [ ] Hot-seat turns, P1/P2/P3, best distance wins (reuse Cube Trials'
+      hand-off flow).
+- [ ] A daily seed.
+- [ ] Chase camera.
+- [ ] A light music bed through `AudioManager`.
