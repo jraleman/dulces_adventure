@@ -7,7 +7,10 @@ extends RefCounted
 ## run and a great run can be replayed. Biomes follow the world: a run that
 ## starts at the Park is 400 m from the front door, so Main Street comes 500 m
 ## later. Difficulty follows the run itself (distance is relative everywhere),
-## so a later start eases in like any other. The stream keeps about three screens
+## so a later start eases in like any other.
+##
+## Given a fixed stage (`stages.gd`), it lays that stage's chunks in order
+## instead, then the goal, and nothing after it: the seed plays no part. The stream keeps about three screens
 ## of chunks ahead of her and frees chunks two screens behind the camera, so
 ## the model only ever holds the live tiles.
 
@@ -36,17 +39,30 @@ var grid := Grid.new()
 var placed: Array[Dictionary] = []
 ## Where the next chunk will start, in tiles.
 var next_column := 0
+## The fixed stage being played, or empty on an endless run.
+var stage: Dictionary = {}
+var _stage_queue: Array[String] = []
 var _rng := RandomNumberGenerator.new()
 var _since_breather := 0
 var _last_id := ""
 
 
-func _init(seed_value := 0, start_biome_value: int = ChunkLibrary.Biome.BACKYARD) -> void:
+func _init(
+	seed_value := 0, start_biome_value: int = ChunkLibrary.Biome.BACKYARD,
+	stage_value: Dictionary = {}
+) -> void:
 	run_seed = posmod(seed_value, SEED_LIMIT)
 	start_biome = start_biome_value
 	biome = start_biome_value
 	start_metres = float(ChunkLibrary.BIOMES[start_biome_value]["start_m"])
 	_rng.seed = run_seed
+	stage = stage_value
+	if not stage.is_empty():
+		start_biome = int(stage["biome"])
+		biome = start_biome
+		_stage_queue.assign(stage["chunks"])
+		_stage_queue.pop_front()
+		_stage_queue.append(str(ChunkLibrary.GOAL["id"]))
 
 
 static func random_seed() -> int:
@@ -81,6 +97,10 @@ func update(state: State, left_edge: float) -> bool:
 ## changes biome, the forced breather when one is due, otherwise any chunk no
 ## harder than the ramp allows, never the same one twice in a row.
 func next_chunk() -> Dictionary:
+	if not stage.is_empty():
+		# A fixed stage: its own chunks in order, then the goal, then nothing.
+		return {} if _stage_queue.is_empty() \
+			else ChunkLibrary.chunk_named(_stage_queue.pop_front())
 	var here := ChunkLibrary.biome_at(world_metres(next_column))
 	if here != biome:
 		return ChunkLibrary.gate_of(here)
@@ -138,7 +158,10 @@ static func strip(
 func _fill(state: State) -> bool:
 	var added := false
 	while next_column * Grid.TILE < state.position.x + AHEAD_TILES * Grid.TILE:
-		state.add_course(_place(next_chunk()))
+		var chunk := next_chunk()
+		if chunk.is_empty():
+			break
+		state.add_course(_place(chunk))
 		added = true
 	return added
 
@@ -149,7 +172,8 @@ func _place(chunk: Dictionary, announce := true) -> Dictionary:
 	var rows := ChunkLibrary.rows_of(chunk)
 	var course := ChunkLibrary.build(rows, grid, Vector2i(next_column, 0))
 	var breather := bool(chunk.get("breather", false))
-	var chunk_biome := int(chunk["biome"])
+	# The goal chunk is shared, so it takes the biome of the stage it ends.
+	var chunk_biome := int(chunk["biome"]) if stage.is_empty() else int(stage["biome"])
 	if chunk.get("gate", false) and announce:
 		course["gates"] = [{
 			"x": (next_column + ChunkLibrary.START_COLUMN + 0.5) * Grid.TILE,
@@ -159,6 +183,8 @@ func _place(chunk: Dictionary, announce := true) -> Dictionary:
 	placed.append({
 		"id": str(chunk["id"]), "column": next_column, "width": rows[0].length(),
 		"difficulty": int(chunk["difficulty"]), "breather": breather, "biome": chunk_biome,
+		"gate": chunk.get("gate", false) and chunk != ChunkLibrary.GOAL,
+		"goal": chunk.get("goal", false),
 	})
 	next_column += rows[0].length()
 	_since_breather = 0 if breather else _since_breather + 1

@@ -12,6 +12,7 @@ const WorldView = preload("res://games/dulces_adventure/world_view.gd")
 const LevelStream = preload("res://games/dulces_adventure/level_stream.gd")
 const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
 const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
+const Stages = preload("res://games/dulces_adventure/stages.gd")
 
 ## The shared setup screen's level row, at Cube Trials' size, rendered large
 ## and scaled down for clean edges.
@@ -19,8 +20,10 @@ const LEVEL_ART_SIZE := Vector2i(384, 240)
 const LEVEL_ART_SUPERSAMPLE := 3
 ## A fixed seed, so a still only changes when the chunks or the art do.
 const ART_SEED := 2024
-## Dulce stands a few tiles into the gate, in front of its sign.
+## Dulce stands a few tiles into the gate, in front of its sign; on a stage's
+## still, a few tiles short of the finish.
 const STAND_COLUMN := 6
+const GOAL_LEAD_TILES := 7.0
 
 var _failed := false
 
@@ -48,13 +51,24 @@ func _capture_level(level: Dictionary) -> void:
 	frame.add_child(view)
 	view.size = Vector2(frame.size)
 	view.reduced_motion = true
-	var stream := LevelStream.new(ART_SEED, ChunkLibrary.biome_named(str(level["id"])))
+	var stage := Stages.find(str(level["id"]))
+	var biome := int(stage["biome"]) if not stage.is_empty() \
+		else ChunkLibrary.biome_named(str(level["id"]))
+	var stream := LevelStream.new(ART_SEED, biome, stage)
 	var state := stream.start()
-	state.place(Vector2((STAND_COLUMN + 0.5) * 40.0, ChunkLibrary.SEAM_ROW * 40.0))
+	var stand := (STAND_COLUMN + 0.5) * 40.0
+	if not stage.is_empty():
+		# Walk the stream forward until the goal is laid, keeping every chunk.
+		while not is_finite(state.goal_x):
+			state.place(Vector2(stream.next_column * 40.0, ChunkLibrary.SEAM_ROW * 40.0))
+			if not stream.update(state, -INF):
+				break
+		stand = state.goal_x - GOAL_LEAD_TILES * 40.0
+	state.place(Vector2(stand, ChunkLibrary.SEAM_ROW * 40.0))
 	var chunks: Array[Dictionary] = []
 	for chunk in stream.placed:
 		chunks.append({"column": chunk["column"], "width": chunk["width"],
-			"biome": chunk["biome"], "gate": chunk == stream.placed[0]})
+			"biome": chunk["biome"], "gate": chunk["gate"], "goal": chunk["goal"]})
 	view.configure(state, chunks)
 	for _frame in 6:
 		view.present(0.0)

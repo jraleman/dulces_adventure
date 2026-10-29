@@ -115,7 +115,7 @@ func _init() -> void:
 
 ## Which pose the run state calls for; reactions play on top of it.
 static func pose_for(state: State, victory := false) -> String:
-	if victory:
+	if victory or state.cleared:
 		return SIT
 	if state.over:
 		return TUMBLE

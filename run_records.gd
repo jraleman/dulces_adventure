@@ -2,9 +2,11 @@ extends RefCounted
 
 ## Best runs, kept in `user://dulces_adventure.cfg` (DESIGN §4.5).
 ##
-## One `ConfigFile` section per start point (`[backyard]`, later `[park]` and
-## the fixed stages), each holding `distance`, `score` and `burgers`. Every
-## field only ever goes up, and a save merges into the stored file rather than
+## One `ConfigFile` section per start point (`[backyard]`, `[park]`, …) and
+## per fixed stage (`[stage_backyard]`, …), each holding `distance`, `score`
+## and `burgers`, which only ever go up. A stage's section also keeps
+## `time_ms`, its best clear time, which only ever goes down: an unfinished
+## attempt never sets one. A save merges into the stored file rather than
 ## rebuilding it, so a build that does not know a section never deletes it.
 ## The file is declared in the manifest's `save_files`, so the Saves screen
 ## backs it up, restores it and deletes it with the rest of Dulce's progress.
@@ -12,6 +14,8 @@ extends RefCounted
 const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
 
 const FIELDS: Array[String] = ["distance", "score", "burgers"]
+## Fields where smaller is better; 0 means "none yet".
+const LOWER_FIELDS: Array[String] = ["time_ms"]
 
 var path := Options.SAVE_PATH
 
@@ -24,7 +28,7 @@ func _init(file_path := Options.SAVE_PATH) -> void:
 func best(start_id: String) -> Dictionary:
 	var file := _load()
 	var record := {}
-	for field in FIELDS:
+	for field in FIELDS + LOWER_FIELDS:
 		record[field] = int(file.get_value(start_id, field, 0))
 	return record
 
@@ -41,6 +45,12 @@ func record(start_id: String, run: Dictionary) -> PackedStringArray:
 	for field in FIELDS:
 		var value := int(run.get(field, 0))
 		if value > int(file.get_value(start_id, field, 0)):
+			file.set_value(start_id, field, value)
+			improved.append(field)
+	for field in LOWER_FIELDS:
+		var value := int(run.get(field, 0))
+		var stored := int(file.get_value(start_id, field, 0))
+		if value > 0 and (stored <= 0 or value < stored):
 			file.set_value(start_id, field, value)
 			improved.append(field)
 	if not improved.is_empty():

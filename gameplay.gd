@@ -4,13 +4,15 @@ extends GameShell
 ##
 ## The shell's countdown and lives pool are off (`uses_shell_round_rules =
 ## false`): the model owns hearts, and a run ends through the shell's normal
-## `_end_round()` once her last heart is gone and the tumble has played. Each
-## run is a fresh seed of the chunk stream; `--dulce-seed=<n>` after `--` on
-## the command line replays one.
+## `_end_round()` once her last heart is gone and the tumble has played, or
+## once she reaches a fixed stage's goal. An endless run is a fresh seed of
+## the chunk stream (`--dulce-seed=<n>` after `--` replays one); a stage is
+## the same course every time, timed.
 
 const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
 const State = preload("res://games/dulces_adventure/run_state.gd")
 const LevelStream = preload("res://games/dulces_adventure/level_stream.gd")
+const Stages = preload("res://games/dulces_adventure/stages.gd")
 const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
 const WorldView = preload("res://games/dulces_adventure/world_view.gd")
 const RunControls = preload("res://games/dulces_adventure/run_controls.gd")
@@ -33,6 +35,8 @@ var _records := Records.new()
 var _cues: Dictionary[String, AudioStreamWAV] = {}
 var _start_id := Options.START_BACKYARD
 var _start_biome: int = ChunkLibrary.Biome.BACKYARD
+## The fixed stage being played, or empty on an endless run.
+var _stage: Dictionary = {}
 ## This start point's best run before the current one, for "new best" copy.
 var _best := {}
 var _auto_run := false
@@ -82,8 +86,10 @@ func _reset_round_state() -> void:
 	_ended = false
 	_seed = _requested_seed()
 	_start_id = str(GameSession.selected_level().get("id", Options.START_BACKYARD))
-	_start_biome = ChunkLibrary.biome_named(_start_id)
-	_stream = LevelStream.new(_seed, _start_biome)
+	_stage = Stages.find(_start_id)
+	_start_biome = int(_stage["biome"]) if not _stage.is_empty() \
+		else ChunkLibrary.biome_named(_start_id)
+	_stream = LevelStream.new(_seed, _start_biome, _stage)
 	_state = _stream.start()
 	_state.auto_run = _auto_run
 	_state.kind_pits = _kind_pits
@@ -111,7 +117,7 @@ func _live_chunks() -> Array[Dictionary]:
 	for chunk in _stream.placed:
 		chunks.append({
 			"column": chunk["column"], "width": chunk["width"], "biome": chunk["biome"],
-			"gate": ChunkLibrary.gate_of(int(chunk["biome"]))["id"] == chunk["id"],
+			"gate": chunk["gate"], "goal": chunk["goal"],
 		})
 	return chunks
 
@@ -180,9 +186,16 @@ func _sync_hud() -> void:
 		return
 	_scores[PLAYER_ONE] = _state.score()
 	_update_scores()
-	# Distance is the headline (DESIGN §4.5), so it takes the shell's big card.
-	_time_caption.text = "DISTANCE"
-	_time_label.text = "%d m" % floori(_state.distance_m())
+	# The headline takes the shell's big card: distance on an endless run
+	# (DESIGN §4.5), the clock on a stage (§5.5).
+	if _stage.is_empty():
+		_time_caption.text = "DISTANCE"
+		_time_label.text = "%d m" % floori(_state.distance_m())
+	else:
+		_time_caption.text = "TIME  ·  %d / %d M" % [
+			floori(_state.distance_m()), floori(Stages.length_m(_stage)),
+		]
+		_time_label.text = Stages.time_text(_state.clear_time if _state.cleared else _state.elapsed)
 	if _run_hud != null:
 		_run_hud.present(_state)
 
@@ -230,6 +243,8 @@ func _finish_round() -> void:
 
 
 func _describe_round_outcome(_one: int, _two: int) -> Dictionary:
+	if not _stage.is_empty():
+		return _describe_stage()
 	var distance := floori(_state.distance_m())
 	var best := int(_best.get("distance", 0))
 	var new_best := distance > best and distance > 0
@@ -246,6 +261,46 @@ func _describe_round_outcome(_one: int, _two: int) -> Dictionary:
 	}
 
 
+## A stage's results lead with the clock; an attempt that ran out of hearts
+## says how far along the course she got.
+func _describe_stage() -> Dictionary:
+	var title := str(_stage_title())
+	var food := "%d of %d burgers, %d stomps" % [
+		_state.burgers, Stages.food_total(_stage), _state.stomps,
+	]
+	var best_ms := int(_best.get("time_ms", 0))
+	if not _state.cleared:
+		var lines := PackedStringArray([
+			"%s: %d of %d m" % [title, floori(_state.distance_m()), floori(Stages.length_m(_stage))],
+			food,
+		])
+		if best_ms > 0:
+			lines.append("Best: %s" % Stages.time_text(best_ms / 1000.0))
+		return {
+			"result": "RUN OVER: %d M TO GO" % ceili(Stages.length_m(_stage) - _state.distance_m()),
+			"subtitle": "  ·  ".join(lines),
+			"color": Art.CREAM,
+		}
+	var time_ms := roundi(_state.clear_time * 1000.0)
+	var new_best := best_ms <= 0 or time_ms < best_ms
+	var lines := PackedStringArray([title, food])
+	if not new_best:
+		lines.append("Best: %s" % Stages.time_text(best_ms / 1000.0))
+	var clock := Stages.time_text(_state.clear_time)
+	return {
+		"result": "NEW BEST: %s!" % clock if new_best else "STAGE CLEAR: %s" % clock,
+		"subtitle": "  ·  ".join(lines),
+		"color": Art.MUSTARD if new_best else Art.LETTUCE,
+	}
+
+
+func _stage_title() -> String:
+	for level: Dictionary in Options.LEVELS:
+		if level["id"] == _start_id:
+			return str(level["title"])
+	return _start_id
+
+
 ## Assists never block achievements (DESIGN §8), so none of them is checked.
 func _award_round_achievements(_one: int, _two: int) -> void:
 	var distance := _state.distance_m()
@@ -258,11 +313,26 @@ func _award_round_achievements(_one: int, _two: int) -> void:
 		_unlock_round_achievement(Options.COMBO)
 	if _state.best_clean_m >= Options.CLEAN_METRES:
 		_unlock_round_achievement(Options.CLEAN)
+	if not _stage.is_empty() and _state.cleared:
+		var opened := not AchievementManager.is_unlocked(str(_stage["clear_achievement"]))
+		_unlock_round_achievement(str(_stage["clear_achievement"]))
+		var next := _next_stage()
+		if opened and not next.is_empty():
+			_round_progression_notes.append("%s is open" % next["title"])
 	var improved := _records.record(_start_id, {
 		"distance": floori(distance), "score": _state.score(), "burgers": _state.burgers,
+		"time_ms": roundi(_state.clear_time * 1000.0) if _state.cleared else 0,
 	})
 	if "score" in improved and int(_best.get("score", 0)) > 0:
 		_round_progression_notes.append("New best score")
+
+
+## The stage level after this one in the selector, or empty after the last.
+func _next_stage() -> Dictionary:
+	for level: Dictionary in Options.LEVELS:
+		if level.get("requires_achievement", "") == _stage.get("clear_achievement", ""):
+			return level
+	return {}
 
 
 func _best_combo_summary() -> String:
@@ -287,15 +357,31 @@ func _player_stats(player: int) -> Dictionary:
 		"accuracy": roundi(100.0 * _state.burgers / passed) if passed > 0 else 0,
 		"streak": _state.best_chain,
 		"details": [
-			{"label": "Distance", "value": "%d m from %s" % [floori(_state.distance_m()), _start_title()]},
+			{"label": "Distance", "value": "%d m from %s" % [floori(_state.distance_m()), _start_title()]}
+				if _stage.is_empty() else {"label": "Stage", "value": _stage_title()},
 			{"label": "Stomps", "value": str(_state.stomps)},
 			{"label": "Pits", "value": str(_state.pits)},
 			{"label": "Longest clean stretch", "value": "%d m" % floori(_state.best_clean_m)},
+		] + _run_details(),
+	}
+
+
+## The last stats rows: an endless run's best distance and seed, or a stage's
+## clock and food.
+func _run_details() -> Array:
+	if _stage.is_empty():
+		return [
 			{"label": "Best distance", "value": "%d m" % maxi(
 				int(_best.get("distance", 0)), floori(_state.distance_m()))},
 			{"label": "Course seed", "value": str(_seed)},
-		],
-	}
+		]
+	var best_ms := int(_best.get("time_ms", 0))
+	return [
+		{"label": "Time", "value": Stages.time_text(_state.clear_time) if _state.cleared
+			else "Did not finish"},
+		{"label": "Best time", "value": Stages.time_text(best_ms / 1000.0) if best_ms > 0 else "-"},
+		{"label": "Burgers", "value": "%d of %d" % [_state.burgers, Stages.food_total(_stage)]},
+	]
 
 
 # --------------------------------------------------------------------------
@@ -306,6 +392,12 @@ func _player_stats(player: int) -> Dictionary:
 func _configure_mode_ui() -> void:
 	super()
 	_callout.hide()
+	# The results card's rules line, once a run is over.
+	if _stage.is_empty():
+		_round_instructions.text = "Score: metres x %d, plus food and stomps. Every run is a new course." \
+			% State.DISTANCE_POINTS
+	else:
+		_round_instructions.text = "The same course every time. The clock stops at the food truck."
 	_hint.text = "%s / %s move  |  %s jump  |  Hold %s to run  |  Esc pauses" % [
 		Settings.control_key_label(Options.LEFT), Settings.control_key_label(Options.RIGHT),
 		Settings.control_key_label(Options.JUMP), Settings.control_key_label(Options.RUN),

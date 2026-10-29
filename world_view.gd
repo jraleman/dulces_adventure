@@ -262,7 +262,8 @@ func _bake(chunk: Dictionary) -> void:
 	var biome := int(chunk.get("biome", ChunkLibrary.Biome.BACKYARD))
 	var width := int(chunk["width"])
 	(holder.get_node("Terrain") as MeshInstance3D).mesh = terrain_mesh(state.grid, column, width, biome)
-	var props := BiomeProps.props(state.grid, biome, column, width, bool(chunk.get("gate", false)))
+	var props := BiomeProps.props(state.grid, biome, column, width, bool(chunk.get("gate", false)),
+		state.goal_x)
 	(holder.get_node("Props") as MeshInstance3D).mesh = props["lit"]
 	(holder.get_node("Glow") as MeshInstance3D).mesh = props["glow"]
 

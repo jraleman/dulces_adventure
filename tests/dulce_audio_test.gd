@@ -54,6 +54,7 @@ func _test_captions() -> void:
 		{"kind": "stomp", "chain": 2},
 		{"kind": "biome", "title": "the Park"},
 		{"kind": "run_over", "distance": 412},
+		{"kind": "goal", "time": 64.3},
 	]
 	for event: Dictionary in captioned:
 		var cue := DulceAudio.cue_for(event)
@@ -66,6 +67,8 @@ func _test_captions() -> void:
 		.begins_with("Fell in!"), "A pit is captioned as a fall, not a bite.")
 	_expect(DulceAudio.cue_for({"kind": "run_over", "distance": 412})["caption"].contains("412 m"),
 		"Run over says how far she got.")
+	_expect(DulceAudio.cue_for({"kind": "goal", "time": 64.3})["caption"].contains("1:04.3"),
+		"A stage clear says the time.")
 
 
 func _test_pitch() -> void:

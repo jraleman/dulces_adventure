@@ -10,6 +10,7 @@ extends RefCounted
 ## testable headless (DESIGN §9.5, §9.6). Touches no autoload.
 
 const State = preload("res://games/dulces_adventure/run_state.gd")
+const Stages = preload("res://games/dulces_adventure/stages.gd")
 
 const RATE := 22050
 ## Peak level, as a fraction of 16-bit full scale.
@@ -83,6 +84,9 @@ static func cue_for(event: Dictionary) -> Dictionary:
 		"run_over":
 			result["cue"] = "tumble"
 			result["caption"] = "Run over at %d m." % int(event.get("distance", 0))
+		"goal":
+			result["cue"] = "fanfare"
+			result["caption"] = "Stage clear in %s!" % Stages.time_text(float(event.get("time", 0.0)))
 		"biome":
 			result["cue"] = "fanfare"
 			result["caption"] = "Welcome to %s!" % str(event.get("title", "somewhere new"))

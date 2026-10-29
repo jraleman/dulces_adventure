@@ -76,5 +76,25 @@ static func manifest() -> GameManifest:
 			"title": "Not a Scratch", "badge": "CLEAN",
 			"description": "Run %d m without a hit or a fall." % Options.CLEAN_METRES,
 		},
+		Options.CLEARED_BACKYARD: {
+			"title": "Out the Gate", "badge": "STAGE 1",
+			"description": "Clear Stage 1 - Backyard. Opens Stage 2.",
+		},
+		Options.CLEARED_PARK: {
+			"title": "Walk in the Park", "badge": "STAGE 2",
+			"description": "Clear Stage 2 - the Park. Opens Stage 3.",
+		},
+		Options.CLEARED_STREET: {
+			"title": "Street Food", "badge": "STAGE 3",
+			"description": "Clear Stage 3 - Main Street. Opens Stage 4.",
+		},
+		Options.CLEARED_PIER: {
+			"title": "Pier Pressure", "badge": "STAGE 4",
+			"description": "Clear Stage 4 - the Boardwalk Pier. Opens Stage 5.",
+		},
+		Options.CLEARED_MARKET: {
+			"title": "Last Stop, Lunch", "badge": "STAGE 5",
+			"description": "Clear Stage 5 - the Night Market.",
+		},
 	}
 	return game

@@ -59,6 +59,7 @@ const LEGEND := {
 	"g": "seagull",
 	"h": "hot_sauce",
 	"S": "safe",
+	"F": "goal",
 }
 ## Glyphs Dulce can stand on, and the ones she cannot pass through.
 const SUPPORTS := ["#", "=", "?", "!"]
@@ -80,6 +81,23 @@ const START := {
 		"..S...BBB.......",
 		"################",
 		"################",
+	],
+}
+
+## The end of a fixed stage (DESIGN §5.5): a flat stretch with the goal, a
+## food truck, on solid ground, and enough ground after it that the camera
+## never shows the world ending. It takes the stage's biome when it is placed,
+## and is never drawn at random.
+const GOAL := {
+	"id": "stage_goal", "biome": Biome.BACKYARD, "difficulty": 1, "breather": true,
+	"goal": true,
+	"rows": [
+		"............................",
+		"............................",
+		"............................",
+		".S........F.................",
+		"############################",
+		"############################",
 	],
 }
 
@@ -832,6 +850,17 @@ static func chunks_of(biome: int) -> Array[Dictionary]:
 	return []
 
 
+## Any chunk by id, the start, goal and gates included; empty if unknown.
+static func chunk_named(id: String) -> Dictionary:
+	if id == GOAL["id"]:
+		return GOAL
+	for biome: int in BIOMES:
+		for chunk in chunks_of(biome):
+			if chunk["id"] == id:
+				return chunk
+	return {}
+
+
 ## The chunks the stream may draw at random in `biome`: everything but the gate.
 static func pool(biome: int) -> Array[Dictionary]:
 	var chunks: Array[Dictionary] = []
@@ -882,6 +911,7 @@ static func build(rows: Array[String], grid: Grid, origin := Vector2i.ZERO) -> D
 	var lunchboxes: Dictionary[Vector2i, String] = {}
 	var pests: Array[Dictionary] = []
 	var safe_points: Array[Vector2] = []
+	var goal_x := INF
 	for row in rows.size():
 		var line := rows[row]
 		for column in line.length():
@@ -902,15 +932,20 @@ static func build(rows: Array[String], grid: Grid, origin := Vector2i.ZERO) -> D
 					items[cell] = LEGEND[glyph]
 				"S":
 					safe_points.append(feet)
+				"F":
+					goal_x = feet.x
 				_:
 					var kind := str(LEGEND.get(glyph, ""))
 					if Pests.is_known(kind):
 						pests.append({"kind": kind, "feet": feet})
 					else:
 						push_error("Chunk glyph '%s' at %s is not built yet." % [glyph, cell])
-	return {
+	var course := {
 		"items": items, "lunchboxes": lunchboxes, "pests": pests, "safe_points": safe_points,
 	}
+	if is_finite(goal_x):
+		course["goal_x"] = goal_x
+	return course
 
 
 # --------------------------------------------------------------------------
@@ -991,6 +1026,13 @@ static func route_problems(rows: Array[String], id := "course") -> PackedStringA
 	var markers := 0
 	for row in ROWS:
 		for column in width:
+			if rows[row][column] == "F":
+				var under := Vector2i(column, row + 1)
+				if row + 1 >= ROWS or rows[row + 1][column] != "#":
+					problems.append("%s: the goal at (%d, %d) must stand on solid ground." % [id, column, row])
+				elif not from_entry.has(under):
+					problems.append("%s: the goal at (%d, %d) cannot be reached." % [id, column, row])
+				continue
 			if rows[row][column] != "S":
 				continue
 			markers += 1

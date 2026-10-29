@@ -355,6 +355,29 @@ Park". A later start never unlocks anything a Backyard run couldn't; it is
 practice. Level icons (`assets/levels/<id>.png`, 384×240) are captured from
 the real gate chunks by `tools/capture_art.gd`, as in Cube Trials.
 
+### 5.5 Fixed stages
+
+Owner decisions, recorded in `TODO.md`:
+
+- **One stage per biome, about 300 m each** (280–340 m, tested): a fixed,
+  ordered list of that biome's own authored chunks (`stages.gd`), climbing in
+  difficulty, opening on the biome's gate and ending on the shared goal
+  chunk. No seed, no random rolls, and Lunchbox contents are authored, so a
+  stage plays the same every time.
+- **The goal** is the `F` glyph: a food truck with a chequered flag, on solid
+  ground, with ground running on past it. Passing it clears the stage. The
+  clock (model time, so the game-speed assist never changes a time) stops,
+  Dulce sits for 1.4 s, then the results open.
+- **The headline is the clear time** ("NEW BEST: 1:04.3!"), with burgers
+  shown as "X of Y" and score below. The best time per stage lives in the
+  best-runs file as `time_ms` in the stage's section; it only goes down, and
+  an unfinished attempt never sets one.
+- **Losing the last heart ends the attempt**, as on an endless run: the
+  results say how far from the goal she got. Play Again restarts the stage.
+- **Unlocks:** Stage 1 is open. Clearing Stage N unlocks
+  `dulces_adventure_cleared_<biome>` (permanent keys), which opens Stage N+1
+  in the shared level selector.
+
 ---
 
 ## 6. Architecture
@@ -369,7 +392,8 @@ intro.tscn                  # four story cards (shared intro shape)
 run_state.gd                # node-free 120 Hz body, hits, hearts, scoring
 pests.gd                    # node-free enemy behaviours
 chunk_library.gd            # authored chunk grids, legend, validator
-level_stream.gd             # seeded assembly, ramp, safe-ground, live tile window
+level_stream.gd             # seeded assembly, ramp, safe-ground, live tile window; stage mode
+stages.gd                   # the five fixed stages: chunk lists, lengths, time format
 world_view.gd               # isolated SubViewport, orthographic camera, one baked mesh per chunk
 run_controls.gd             # keyboard, gamepad, multitouch
 run_hud.gd                  # hearts, distance, burgers, score, pause
@@ -541,6 +565,11 @@ Assists never block achievements (Cube Trials' rule).
 | `dulces_adventure_hundred` | Hungry Hungry | 100 | 100 burgers in one run |
 | `dulces_adventure_combo` | Boing Boing Boing | COMBO | 4-stomp chain |
 | `dulces_adventure_clean` | Not a Scratch | CLEAN | 500 m without a hit or a fall |
+| `dulces_adventure_cleared_backyard` | Out the Gate | STAGE 1 | Clear Stage 1; opens Stage 2 |
+| `dulces_adventure_cleared_park` | Walk in the Park | STAGE 2 | Clear Stage 2; opens Stage 3 |
+| `dulces_adventure_cleared_street` | Street Food | STAGE 3 | Clear Stage 3; opens Stage 4 |
+| `dulces_adventure_cleared_pier` | Pier Pressure | STAGE 4 | Clear Stage 4; opens Stage 5 |
+| `dulces_adventure_cleared_market` | Last Stop, Lunch | STAGE 5 | Clear Stage 5 |
 
 The first four also gate the start-biome levels (§5.4).
 

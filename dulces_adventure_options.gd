@@ -98,6 +98,12 @@ const CLEAN := "dulces_adventure_clean"
 const REACH_METRES := {
 	REACHED_PARK: 400, REACHED_STREET: 900, REACHED_PIER: 1500, REACHED_MARKET: 2200,
 }
+## Clearing a stage opens the next (owner decision). Save keys, permanent.
+const CLEARED_BACKYARD := "dulces_adventure_cleared_backyard"
+const CLEARED_PARK := "dulces_adventure_cleared_park"
+const CLEARED_STREET := "dulces_adventure_cleared_street"
+const CLEARED_PIER := "dulces_adventure_cleared_pier"
+const CLEARED_MARKET := "dulces_adventure_cleared_market"
 const HUNDRED_BURGERS := 100
 const COMBO_CHAIN := 4
 const CLEAN_METRES := 500
@@ -108,13 +114,20 @@ const START_PARK := "park"
 const START_STREET := "street"
 const START_PIER := "pier"
 const START_MARKET := "market"
+## Fixed stages: their level ids, and their sections in the best-runs file.
+const STAGE_BACKYARD := "stage_backyard"
+const STAGE_PARK := "stage_park"
+const STAGE_STREET := "stage_street"
+const STAGE_PIER := "stage_pier"
+const STAGE_MARKET := "stage_market"
 ## Each start point's still, captured from the real chunks by
 ## `tools/capture_art.gd`.
 const LEVEL_ART := "res://games/dulces_adventure/assets/levels/"
 
-## Start points for the shared level selector (DESIGN §5.4). Each later one
-## opens once a run has covered that far, counted from wherever it started.
-## Milestone 6 adds the fixed stages to the same list.
+## Start points and fixed stages for the shared level selector (DESIGN §5.4,
+## §5.5). Each later start point opens once a run has covered that far,
+## counted from wherever it started; each stage opens when the one before it
+## is cleared.
 const LEVELS: Array[Dictionary] = [
 	{
 		"id": START_BACKYARD, "title": "Endless - Backyard", "icon": LEVEL_ART + "backyard.png",
@@ -143,6 +156,34 @@ const LEVELS: Array[Dictionary] = [
 		"description": "Start 2,200 m out, among food trucks and spitting hot sauce.",
 		"requires_achievement": REACHED_MARKET,
 		"locked_description": "Run 2,200 m in one run to start from the Night Market.",
+	},
+	{
+		"id": STAGE_BACKYARD, "title": "Stage 1 - Backyard", "icon": LEVEL_ART + "stage_backyard.png",
+		"description": "About 300 m from the front door to the food truck. Fastest clear wins.",
+	},
+	{
+		"id": STAGE_PARK, "title": "Stage 2 - the Park", "icon": LEVEL_ART + "stage_park.png",
+		"description": "Ponds, branches and squirrels, on the clock.",
+		"requires_achievement": CLEARED_BACKYARD,
+		"locked_description": "Clear Stage 1 - Backyard.",
+	},
+	{
+		"id": STAGE_STREET, "title": "Stage 3 - Main Street", "icon": LEVEL_ART + "stage_street.png",
+		"description": "Manholes, parked cars and robo-vacs, on the clock.",
+		"requires_achievement": CLEARED_PARK,
+		"locked_description": "Clear Stage 2 - the Park.",
+	},
+	{
+		"id": STAGE_PIER, "title": "Stage 4 - the Boardwalk Pier", "icon": LEVEL_ART + "stage_pier.png",
+		"description": "Plank gaps and swooping gulls, on the clock.",
+		"requires_achievement": CLEARED_STREET,
+		"locked_description": "Clear Stage 3 - Main Street.",
+	},
+	{
+		"id": STAGE_MARKET, "title": "Stage 5 - the Night Market", "icon": LEVEL_ART + "stage_market.png",
+		"description": "Food trucks and hot sauce under the lanterns, on the clock.",
+		"requires_achievement": CLEARED_PIER,
+		"locked_description": "Clear Stage 4 - the Boardwalk Pier.",
 	},
 ]
 

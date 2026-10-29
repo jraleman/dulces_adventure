@@ -43,16 +43,14 @@ Don't start work that depends on an unanswered one.
       `"DeskCanSaw Games/Dulce's Adventure"`, with an apostrophe in
       `custom_user_dir_name`. It can never change after the first ship.
       Blocks Milestone 8.
-- [ ] **Stage gates** — proposal: Stage 1 open, Stage N+1 unlocks when
-      Stage N is cleared. That needs five new permanent achievement keys
-      (e.g. `dulces_adventure_cleared_backyard` … `_cleared_market`). Confirm
-      the keys and titles before Milestone 6.
-- [ ] **Stage headline** — a stage has a fixed length, so distance can't be
-      its headline. Is it clear time, score or burgers? This decides the
-      results panel, the stage share card and what `save_files` stores.
-      Blocks Milestone 6.
-- [ ] **Stage failure** — does losing the last heart in a stage end it with
-      no clear, like an endless run, or restart at the last safe ground?
+- [x] **Stage gates** — Stage 1 open, Stage N+1 opens when Stage N is
+      cleared, through five permanent keys `dulces_adventure_cleared_<biome>`
+      (owner decision; DESIGN §5.5, §9.1).
+- [x] **Stage headline** — clear time; burgers ("X of Y") and score are
+      secondary (owner decision).
+- [x] **Stage failure** — losing the last heart ends the attempt with no
+      clear, as on an endless run (owner decision).
+- [x] **Stage length** — about 300 m (owner decision; 280–340 m, tested).
 - [ ] Fold every answer above into `DESIGN.md` (§1, §3, §4.5, §5.4, §6.3,
       §9.1, §10, §12, §13) so the design and this list agree.
 
@@ -336,23 +334,36 @@ on.
       umbrellas can feel frequent; the Street backdrop is busy. Tune
       `_roll` thresholds and backdrop density after playtests.
 
-## Milestone 6 — Fixed stages (owner decision; not in DESIGN yet)
+## Milestone 6 — Fixed stages (DESIGN §5.5)
 
-- [ ] Write the stages into `DESIGN.md` first: length (~300–500 m *(tune)*),
-      goal, headline, gates, failure rule.
-- [ ] One stage per biome: a fixed, ordered list of authored chunks, with
-      fixed Lunchbox contents and no random rolls.
-- [ ] The food-truck goal and a "cleared" end of round; results and outcome
-      text for a clear and for a run out of hearts.
-- [ ] `LEVELS` gains "Stage 1 — Backyard" … "Stage 5 — Night Market", gated
-      by the agreed stage-clear achievements.
-- [ ] Stage clears and per-stage bests in `user://dulces_adventure.cfg`.
-- [ ] Stage stills from `tools/capture_art.gd`.
-- [ ] `tests/dulce_stages_test.gd` — every stage's chunk list validates and
-      joins at the seams, the goal is reachable, a scripted clear unlocks the
-      next stage, bests never regress.
+- [x] Write the stages into `DESIGN.md` first: length (~300 m), goal,
+      headline, gates, failure rule (§5.5).
+- [x] One stage per biome: a fixed, ordered list of authored chunks, with
+      fixed Lunchbox contents and no random rolls (`stages.gd`; the stream's
+      stage mode ignores the seed).
+- [x] The food-truck goal and a "cleared" end of round; results and outcome
+      text for a clear and for a run out of hearts. The goal is a new `F`
+      glyph in a shared goal chunk, with ground running on past it.
+- [x] `LEVELS` gains "Stage 1 - Backyard" … "Stage 5 - the Night Market",
+      gated by the agreed stage-clear achievements.
+- [x] Stage clears and per-stage bests in `user://dulces_adventure.cfg`
+      (`time_ms`, lower is better, never set by an unfinished attempt).
+- [x] Stage stills from `tools/capture_art.gd`: Dulce a few tiles short of
+      the finish.
+- [x] `tests/dulce_stages_test.gd` — every stage's chunk list validates and
+      joins at the seams, the goal is reachable, the unlock chain, the stream
+      lays the stage as authored whatever the seed, a scripted clear stops
+      the clock and ends the run, bests never regress.
+- [x] The results card's rules line, which had shown the shell's
+      placeholder ("Round scoring goes here.") since Milestone 2, now
+      describes the mode.
 - [ ] **Exit:** all five stages can be cleared from a fresh profile in
       order, and the endless runs still work.
+      *On 4.6.2:* every stage validates end to end, and scripted clears of
+      Stage 1 and 2 go through the real scene to "NEW BEST" results and
+      unlock their achievements in a throwaway profile. Still to do: clear
+      all five by hand from a fresh profile (and set target times from
+      that), and confirm on Godot 4.7.
 
 ## Milestone 7 — Shell features (§7.3, §9.1–§9.4)
 

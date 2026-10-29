@@ -38,6 +38,8 @@ const INVULNERABLE_SECONDS := 1.5
 const HIT_HOP_SPEED := 420.0
 ## The flustered tumble between the last heart and the results.
 const TUMBLE_SECONDS := 1.2
+## The happy sit between reaching a stage's goal and the results.
+const CLEAR_SECONDS := 1.4
 ## The hit box, a little smaller than the 0.6 m x 0.45 m model, so a graze
 ## that looks like a miss is one. Narrower than a tile, so one-tile gaps fit.
 const BODY_SIZE := Vector2(20.0, 16.0)
@@ -93,8 +95,15 @@ var hearts := STARTING_HEARTS
 ## Full after a Big Burger: one hit costs this instead of a heart.
 var full := false
 var invulnerable_left := 0.0
-## The last heart is gone and the tumble has started.
+## The run has stopped: the last heart is gone, or a stage's goal is reached.
+## `tumble_left` counts down the tumble or the celebration either way.
 var over := false
+## Reached the goal of a fixed stage, at `clear_time` seconds of model time,
+## so the game-speed assist never changes a time.
+var cleared := false
+var clear_time := 0.0
+## The goal's x, on a fixed stage; INF on an endless run.
+var goal_x := INF
 var tumble_left := 0.0
 var burgers := 0
 var stomps := 0
@@ -149,6 +158,8 @@ func add_course(course: Dictionary) -> void:
 		lunchboxes[cell] = course["lunchboxes"][cell]
 	for spawn: Dictionary in course.get("pests", []):
 		pests.add(spawn["kind"], spawn["feet"])
+	if course.has("goal_x"):
+		goal_x = float(course["goal_x"])
 	for gate: Dictionary in course.get("gates", []):
 		gates.append(gate)
 	gates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["x"] < b["x"])
@@ -345,6 +356,9 @@ func _step(move: float, run: bool, jump_held: bool) -> void:
 		return
 	furthest_x = maxf(furthest_x, position.x)
 	best_clean_m = maxf(best_clean_m, (furthest_x - _clean_from_x) / Grid.TILE)
+	if position.x >= goal_x:
+		_clear()
+		return
 	while not gates.is_empty() and furthest_x >= float(gates[0]["x"]):
 		var gate: Dictionary = gates.pop_front()
 		biome = int(gate["biome"])
@@ -629,6 +643,17 @@ func _fall_in_pit() -> void:
 	place(safe_point)
 	invulnerable_left = INVULNERABLE_SECONDS
 	_events.append({"kind": "respawn", "point": safe_point})
+
+
+## The stage is done: the clock stops, she sits for her treat, then results.
+func _clear() -> void:
+	cleared = true
+	clear_time = elapsed
+	over = true
+	tumble_left = CLEAR_SECONDS
+	invulnerable_left = 0.0
+	velocity = Vector2.ZERO
+	_events.append({"kind": "goal", "time": clear_time, "distance": floori(distance_m())})
 
 
 func _end_run() -> void:

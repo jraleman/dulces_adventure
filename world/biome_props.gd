@@ -82,10 +82,16 @@ static func _roll(column: int, salt: int) -> float:
 	return float(hash(column * 7919 + salt * 104729) % 1000) / 1000.0
 
 
-## The props behind `width` columns from `first`: `{lit, glow}` meshes.
-static func props(grid: Grid, biome: int, first: int, width: int, gate: bool) -> Dictionary:
+## The props behind `width` columns from `first`: `{lit, glow}` meshes. A gate
+## chunk adds its "Welcome to" sign; `goal_x`, when it falls in this chunk,
+## adds a stage's finish.
+static func props(
+	grid: Grid, biome: int, first: int, width: int, gate: bool, goal_x := INF
+) -> Dictionary:
 	var lit := MeshBuilder.new()
 	var glow := MeshBuilder.new()
+	var has_goal := is_finite(goal_x) and goal_x >= first * Grid.TILE \
+		and goal_x < (first + width) * Grid.TILE
 	for column in range(first, first + width):
 		var top := _top_row(grid, column)
 		if top < 0:
@@ -102,11 +108,15 @@ static func props(grid: Grid, biome: int, first: int, width: int, gate: bool) ->
 			ChunkLibrary.Biome.PIER:
 				_pier(lit, base, column, on_seam)
 			ChunkLibrary.Biome.MARKET:
-				_market(lit, glow, base, column, first)
+				# The goal is the only food truck at a finish, so it reads as one.
+				_market(lit, glow, base, column, first, has_goal)
 	if gate:
 		var at := Art.world_point(Vector2((first + 8.0) * Grid.TILE,
 			ChunkLibrary.SEAM_ROW * Grid.TILE), PROP_DEPTH - 0.1)
 		_gate(lit, glow, at, biome)
+	if has_goal:
+		var finish := Art.world_point(Vector2(goal_x, ChunkLibrary.SEAM_ROW * Grid.TILE), -0.9)
+		_goal(lit, glow, finish, biome)
 	return {"lit": lit.finish(), "glow": glow.finish()}
 
 
@@ -188,7 +198,8 @@ static func _pier(mesh: MeshBuilder, base: Vector3, column: int, on_seam: bool) 
 
 
 static func _market(
-	mesh: MeshBuilder, glow: MeshBuilder, base: Vector3, column: int, first: int
+	mesh: MeshBuilder, glow: MeshBuilder, base: Vector3, column: int, first: int,
+	no_trucks := false
 ) -> void:
 	if (column - first) % 6 == 0:
 		mesh.cylinder(base + Vector3(0, 1.2, -0.3), 0.05, 2.4, BARK, Vector3.ZERO, 8)
@@ -199,7 +210,7 @@ static func _market(
 			glow.ellipsoid(base + Vector3(along * 6.0, 2.3 - sag, -0.3), Vector3.ONE * 0.08,
 				LANTERN if bulb % 2 == 0 else LANTERN_RED, 6)
 	var roll := _roll(column, 5)
-	if roll < 0.1:
+	if roll < 0.1 and not no_trucks:
 		# A food truck, the Night Market's set dressing.
 		mesh.rounded_box(base + Vector3(0, 0.9, -0.6), Vector3(2.4, 1.4, 1.0), 0.12, Color("e8e2d4"))
 		mesh.box(base + Vector3(0.1, 1.15, -0.08), Vector3(1.1, 0.5, 0.04), Art.INK)
@@ -233,6 +244,26 @@ static func far_ground(biome: int) -> Color:
 	if biome == ChunkLibrary.Biome.PIER:
 		return SEA
 	return (palette(biome)["top"] as Color).darkened(0.08)
+
+
+## A stage's finish: a food truck with its hatch lit and a checkered banner
+## over the line, so the end of the course reads from a screen away.
+static func _goal(mesh: MeshBuilder, glow: MeshBuilder, at: Vector3, biome: int) -> void:
+	var paint: Color = palette(biome)["plank"]
+	mesh.rounded_box(at + Vector3(1.6, 1.05, -0.4), Vector3(2.8, 1.7, 1.2), 0.14, Art.CREAM)
+	mesh.box(at + Vector3(1.6, 0.55, 0.22), Vector3(2.82, 0.22, 0.02), paint)
+	mesh.box(at + Vector3(1.5, 1.3, 0.21), Vector3(1.3, 0.6, 0.04), Art.INK)
+	glow.box(at + Vector3(1.5, 1.3, 0.24), Vector3(1.2, 0.5, 0.02), LANTERN)
+	mesh.box(at + Vector3(1.5, 1.72, 0.45), Vector3(1.5, 0.05, 0.5), Art.KETCHUP, Vector3(-0.35, 0, 0))
+	for wheel: float in [0.6, 2.6]:
+		mesh.cylinder(at + Vector3(wheel, 0.2, 0.22), 0.2, 0.14, Art.INK, Vector3(PI / 2, 0, 0), 14)
+	# A chequered flag on a pole at the line, facing the side camera.
+	mesh.cylinder(at + Vector3(0.0, 1.5, 0.3), 0.05, 3.0, WHITE, Vector3.ZERO, 8)
+	for column in 5:
+		for row in 3:
+			var colour := Art.INK if (column + row) % 2 == 0 else WHITE
+			mesh.box(at + Vector3(0.12 + column * 0.2, 2.82 - row * 0.2, 0.3),
+				Vector3(0.2, 0.2, 0.03), colour)
 
 
 ## One backdrop tile, `BACKDROP_TILE` metres wide, its ground line at y = 0.

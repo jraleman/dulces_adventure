@@ -30,7 +30,8 @@ Only what exists so far. `DESIGN.md` §6 is the target layout.
 | `pests.gd` | Node-free pest behaviours: pigeon, gnome, squirrel, robo-vac, seagull, hot sauce |
 | `tile_grid.gd` | Live tiles the body collides with, Lunchboxes included |
 | `chunk_library.gd` | The legend, biomes, every biome's chunks and gate, `build()`, the validator |
-| `level_stream.gd` | Seeded chunk assembly: the live window, the ramp, breathers |
+| `level_stream.gd` | Seeded chunk assembly: the live window, the ramp, breathers; stage mode |
+| `stages.gd` | The five fixed stages: chunk lists, lengths, food totals, `time_text()` |
 | `run_records.gd` | Best runs in `user://dulces_adventure.cfg`; merges, never regresses |
 | `run_controls.gd` | Keyboard, gamepad and touch buttons into model inputs; no autoloads |
 | `run_hud.gd` | Hearts, burgers and the FULL badge over the sky |
@@ -62,6 +63,7 @@ godot --headless --path . --script res://games/dulces_adventure/tests/dulce_chun
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_stream_test.gd -- --game=all
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_model_test.gd -- --game=all
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_audio_test.gd -- --game=all
+godot --headless --path . --script res://games/dulces_adventure/tests/dulce_stages_test.gd -- --game=all
 godot --path . -- --game=dulces_adventure --dulce-seed=42   # replay one seed
 godot --path . --script res://games/dulces_adventure/tools/capture_art.gd -- --only=levels
 ```
@@ -119,6 +121,9 @@ every game in the catalog, so this one is covered as soon as `game.gd` exists.
 - Distance counts from the run's start point everywhere: score, best distance
   and reach achievements (owner decision, recorded in `TODO.md`).
 - Assists (Auto-run, Kind pits, Game speed) never block achievements.
+- A stage's clock is model time, so the game-speed assist never changes a
+  clear time. A stage's chunk list is part of its records: editing one
+  changes what every saved best time means.
 
 ## Accessibility
 

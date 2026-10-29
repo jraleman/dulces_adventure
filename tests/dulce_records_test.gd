@@ -36,7 +36,7 @@ func _test_manifest_declares_the_file() -> void:
 
 func _test_empty() -> void:
 	var best := Records.new(_path).best(Options.START_BACKYARD)
-	_expect(best == {"distance": 0, "score": 0, "burgers": 0},
+	_expect(best == {"distance": 0, "score": 0, "burgers": 0, "time_ms": 0},
 		"With no file yet, every best is zero.")
 
 
@@ -50,7 +50,7 @@ func _test_records_never_regress() -> void:
 		{"distance": 90, "score": 5000, "burgers": 10})
 	_expect(second == PackedStringArray(["score"]), "Only the beaten field improves.")
 	_expect(records.best(Options.START_BACKYARD) == {
-		"distance": 120, "score": 5000, "burgers": 30,
+		"distance": 120, "score": 5000, "burgers": 30, "time_ms": 0,
 	}, "Each field keeps its own best; nothing regresses.")
 	_expect(Records.new(_path).best(Options.START_BACKYARD)["distance"] == 120,
 		"Bests survive into a fresh reader, so they are really on disk.")

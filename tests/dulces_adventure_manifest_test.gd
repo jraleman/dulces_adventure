@@ -116,8 +116,14 @@ func _test_levels(manifest: GameManifest, constants: Dictionary) -> void:
 		["street", "REACHED_STREET"],
 		["pier", "REACHED_PIER"],
 		["market", "REACHED_MARKET"],
+		["stage_backyard", ""],
+		["stage_park", "CLEARED_BACKYARD"],
+		["stage_street", "CLEARED_PARK"],
+		["stage_pier", "CLEARED_STREET"],
+		["stage_market", "CLEARED_PIER"],
 	]
-	_expect(manifest.levels.size() == expected.size(), "There are five endless start points.")
+	_expect(manifest.levels.size() == expected.size(),
+		"Five endless start points, then five stages.")
 	for index in mini(manifest.levels.size(), expected.size()):
 		var level: Dictionary = manifest.levels[index]
 		var pair: Array = expected[index]
