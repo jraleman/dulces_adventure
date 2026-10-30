@@ -12,6 +12,7 @@ const PawParticles = preload("res://games/dulces_adventure/world/paw_particles.g
 const State = preload("res://games/dulces_adventure/run_state.gd")
 const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
 const Art = preload("res://games/dulces_adventure/dulce_art.gd")
+const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
 
 const FLOOR := Vector2(100.0, 160.0)
 
@@ -56,8 +57,9 @@ func _test_parts() -> void:
 			"Rig/Torso/FrontNear", "Rig/Torso/FrontFar", "Rig/Torso/BackNear",
 			"Rig/Torso/BackFar"]:
 		_expect(model.get_node_or_null(path) != null, "The rig has a %s pivot." % path)
-	var meshes := model.find_children("*", "MeshInstance3D", true, false)
-	_expect(meshes.size() <= 12, "Dulce draws in a dozen calls or fewer (%d)." % meshes.size())
+	var drawn := model.find_children("*", "MeshInstance3D", true, false).filter(
+		func(node: MeshInstance3D) -> bool: return node.mesh != null)
+	_expect(drawn.size() <= 12, "Dulce draws in a dozen calls or fewer (%d)." % drawn.size())
 	model.free()
 
 
@@ -171,14 +173,30 @@ func _test_blink_and_tumble() -> void:
 	model.free()
 
 
+## Store items dress her by id: a collar always, a hat and a neck piece when
+## given, and an unknown collar falls back to the red one she came with.
 func _test_collar() -> void:
 	var model := _model()
 	var collar := model.get_node("Rig/Torso/Collar") as MeshInstance3D
+	var hat := model.get_node("Rig/Torso/Head/Hat") as MeshInstance3D
+	var neck := model.get_node("Rig/Torso/Neck") as MeshInstance3D
 	var red := collar.mesh
-	model.set_collar_color(Color("2d6fd0"))
-	_expect(collar.mesh != red, "A store collar recolours the band.")
-	model.set_collar_color(Art.COLLAR)
-	_expect(collar.mesh == red, "Collars are built once per colour and shared.")
+	_expect(red != null and hat.mesh == null and neck.mesh == null,
+		"She starts in the red collar, with no hat and nothing at her neck.")
+	model.set_outfit(Options.COLLAR_SPIKED, Options.HAT_CHEF, Options.CAPE_HERO)
+	_expect(collar.mesh != red and hat.mesh != null and neck.mesh != null,
+		"A bought collar, hat and cape all show on her.")
+	model.set_outfit("not_an_item", "", "")
+	_expect(collar.mesh == red and hat.mesh == null and neck.mesh == null,
+		"An unknown collar falls back to red; empty slots stay empty.")
+	for item: Dictionary in Options.STORE_ITEMS:
+		var kind := str(item["kind"])
+		model.set_outfit(item["id"] if kind == Options.COLLAR_KIND else Options.COLLAR_RED,
+			item["id"] if kind == Options.HAT_KIND else "",
+			item["id"] if kind == Options.BANDANA_KIND else "")
+		var worn := collar.mesh if kind == Options.COLLAR_KIND \
+			else hat.mesh if kind == Options.HAT_KIND else neck.mesh
+		_expect(worn != null, "%s has a model she can wear." % item["id"])
 	model.free()
 
 
@@ -205,6 +223,8 @@ func _bounds(model: Node3D) -> AABB:
 	var total := AABB()
 	var first := true
 	for node: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+		if node.mesh == null:
+			continue
 		var transform := Transform3D.IDENTITY
 		var walker: Node = node
 		while walker != model:

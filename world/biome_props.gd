@@ -246,6 +246,14 @@ static func far_ground(biome: int) -> Color:
 	return (palette(biome)["top"] as Color).darkened(0.08)
 
 
+## The finish set piece on its own, `{lit, glow}`, for the gallery.
+static func goal_mesh(biome: int) -> Dictionary:
+	var lit := MeshBuilder.new()
+	var glow := MeshBuilder.new()
+	_goal(lit, glow, Vector3.ZERO, biome)
+	return {"lit": lit.finish(), "glow": glow.finish()}
+
+
 ## A stage's finish: a food truck with its hatch lit and a checkered banner
 ## over the line, so the end of the course reads from a screen away.
 static func _goal(mesh: MeshBuilder, glow: MeshBuilder, at: Vector3, biome: int) -> void:

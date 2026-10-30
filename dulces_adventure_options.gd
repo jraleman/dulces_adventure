@@ -187,8 +187,203 @@ const LEVELS: Array[Dictionary] = [
 	},
 ]
 
-## The cosmetics shop and the museum arrive in Milestone 7.
-const STORE_CURRENCY := {}
-const STORE_SLOTS: Array[Dictionary] = []
-const STORE_ITEMS: Array[Dictionary] = []
-const GALLERY_EXHIBITS: Array[Dictionary] = []
+## Dulce is the one character; the setup screen stands her on its plinth in
+## whatever she is wearing (owner decision).
+const CHARACTER_ID := "dulce"
+const CHARACTERS: Array[Dictionary] = [
+	{
+		"id": CHARACTER_ID, "title": "Dulce",
+		"description": "A small, cheerful chihuahua mix with a very big appetite.",
+	},
+]
+
+# --------------------------------------------------------------------------
+# The store (DESIGN §9.2)
+# --------------------------------------------------------------------------
+
+## Treats: one per 100 points, 3 for any finished run (owner decision), and
+## `TREATS_PER_CLEAR` more for clearing a stage, paid by the gameplay scene.
+const STORE_CURRENCY := {
+	"name": "Treat",
+	"plural": "Treats",
+	"points_per_score": 0.01,
+	"round_bonus": 3,
+	"win_bonus": 0,
+	"max_per_round": 0,
+}
+const TREATS_PER_CLEAR := 20
+
+const COLLAR_KIND := "dulce_collar"
+const HAT_KIND := "dulce_hat"
+const BANDANA_KIND := "dulce_bandana"
+const COLLAR_SLOT := "dulce_collar"
+const HAT_SLOT := "dulce_hat"
+const BANDANA_SLOT := "dulce_bandana"
+
+const COLLAR_RED := "dulce_collar_red"
+const COLLAR_BLUE := "dulce_collar_blue"
+const COLLAR_SPIKED := "dulce_collar_spiked"
+const COLLAR_GOLD := "dulce_collar_gold"
+const HAT_PARTY := "dulce_hat_party"
+const HAT_FLOWERS := "dulce_hat_flowers"
+const HAT_CHEF := "dulce_hat_chef"
+const HAT_SOMBRERO := "dulce_hat_sombrero"
+const BANDANA_KETCHUP := "dulce_bandana_ketchup"
+const BANDANA_MUSTARD := "dulce_bandana_mustard"
+const CAPE_HERO := "dulce_cape_hero"
+
+## A collar is always worn; a hat and a bandana are optional.
+const STORE_SLOTS: Array[Dictionary] = [
+	{
+		"id": COLLAR_SLOT, "kind": COLLAR_KIND, "title": "Collar",
+		"description": "Always on: the red one she came with, or one you buy her.",
+	},
+	{
+		"id": HAT_SLOT, "kind": HAT_KIND, "title": "Hat", "empty_title": "No hat",
+		"description": "Sits between her big ears.",
+	},
+	{
+		"id": BANDANA_SLOT, "kind": BANDANA_KIND, "title": "Neck", "empty_title": "Nothing",
+		"description": "A bandana at her neck, or a cape down her back.",
+	},
+]
+
+## Purely cosmetic: worn in the run, on the setup plinth, on the share card
+## and in the gallery, and nothing here changes how she runs or jumps.
+const STORE_ITEMS: Array[Dictionary] = [
+	{
+		"id": COLLAR_RED, "kind": COLLAR_KIND, "price": 0, "default": true,
+		"title": "Red Collar", "badge": "RED", "color": Color("c8413a"), "heading": "Collars",
+		"description": "The collar she wore out the front door. A tag shaped like a little bun.",
+	},
+	{
+		"id": COLLAR_BLUE, "kind": COLLAR_KIND, "price": 60,
+		"title": "Sky Collar", "badge": "SKY", "color": Color("3f86c9"), "heading": "Collars",
+		"description": "Blue as the Backyard's afternoon sky.",
+	},
+	{
+		"id": COLLAR_SPIKED, "kind": COLLAR_KIND, "price": 150,
+		"title": "Spiked Collar", "badge": "SPIKE", "color": Color("2e2a33"), "heading": "Collars",
+		"description": "Studs all round, for a very small, very tough dog.",
+	},
+	{
+		"id": COLLAR_GOLD, "kind": COLLAR_KIND, "price": 300,
+		"requires_achievement": CLEARED_MARKET,
+		"title": "Gold Collar", "badge": "GOLD", "color": Color("f2c14e"), "heading": "Collars",
+		"description": "For a dog who has run every stage to the last food truck.",
+	},
+	{
+		"id": HAT_PARTY, "kind": HAT_KIND, "price": 80,
+		"title": "Party Hat", "badge": "PARTY", "color": Color("e86ab0"), "heading": "Hats",
+		"description": "Every run is a party if there are burgers at the end.",
+	},
+	{
+		"id": HAT_FLOWERS, "kind": HAT_KIND, "price": 120,
+		"title": "Flower Crown", "badge": "BLOOM", "color": Color("f2b33d"), "heading": "Hats",
+		"description": "Picked from the Backyard's pots. Nobody saw. Probably.",
+	},
+	{
+		"id": HAT_CHEF, "kind": HAT_KIND, "price": 160,
+		"title": "Tiny Chef's Hat", "badge": "CHEF", "color": Color("f4f1ea"), "heading": "Hats",
+		"description": "She has strong opinions about burgers now.",
+	},
+	{
+		"id": HAT_SOMBRERO, "kind": HAT_KIND, "price": 220,
+		"requires_achievement": REACHED_STREET,
+		"title": "Sombrero", "badge": "SOMB", "color": Color("d9a54a"), "heading": "Hats",
+		"description": "Wide enough to shade a whole chihuahua on Main Street.",
+	},
+	{
+		"id": BANDANA_KETCHUP, "kind": BANDANA_KIND, "price": 70,
+		"title": "Ketchup Bandana", "badge": "RED", "color": Color("d9533b"), "heading": "Neck",
+		"description": "Hides any stains from the Night Market, in theory.",
+	},
+	{
+		"id": BANDANA_MUSTARD, "kind": BANDANA_KIND, "price": 70,
+		"title": "Mustard Bandana", "badge": "MUST", "color": Color("f2b33d"), "heading": "Neck",
+		"description": "Bright enough to spot from the far end of the Pier.",
+	},
+	{
+		"id": CAPE_HERO, "kind": BANDANA_KIND, "price": 250,
+		"requires_achievement": REACHED_PIER,
+		"title": "Superhero Cape", "badge": "CAPE", "color": Color("3f6aa8"), "heading": "Neck",
+		"description": "Does not help her fly. She does not need to know that.",
+	},
+]
+
+# --------------------------------------------------------------------------
+# The gallery (DESIGN §9.3)
+# --------------------------------------------------------------------------
+
+const EXHIBIT_DULCE := "dulce"
+const EXHIBIT_DULCE_FULL := "dulce_full"
+const EXHIBIT_FOOD_TRUCK := "food_truck"
+
+## Everything the run is made of, built by the same code the run uses. Later
+## biomes' pests open with the distance that reaches their biome.
+const GALLERY_EXHIBITS: Array[Dictionary] = [
+	{
+		"id": EXHIBIT_DULCE, "title": "Dulce", "heading": "Dulce", "badge": "DULCE",
+		"color": Color("d6a26b"),
+		"description": "Big upright ears, a short muzzle and a curled tail, in her equipped outfit.",
+		"facts": ["A rig of rigid parts: head, ears, tail, four legs", "0.6 m nose to tail"],
+	},
+	{
+		"id": EXHIBIT_DULCE_FULL, "title": "Dulce, Full", "heading": "Dulce", "badge": "FULL",
+		"color": Color("f2b33d"),
+		"description": "After a Big Burger: rounder, and good for one free hit.",
+		"facts": ["Full is a shape, never just a colour"],
+	},
+	{
+		"id": "pigeon", "title": "Grumpy Pigeon", "heading": "The pests", "badge": "PIGEON",
+		"color": Color("8d93a3"), "description": "Waddles to the edge, turns round, waddles back.",
+		"facts": ["First seen: the Backyard", "Stomp: a puff of feathers"],
+	},
+	{
+		"id": "gnome", "title": "Garden Gnome", "heading": "The pests", "badge": "GNOME",
+		"color": Color("c8473a"), "description": "Never moves. Never lets you stomp it, either.",
+		"facts": ["First seen: the Backyard", "Pointed hat: jump over it"],
+	},
+	{
+		"id": "squirrel", "title": "Squirrel", "heading": "The pests", "badge": "SQRL",
+		"color": Color("a0643a"), "requires_achievement": REACHED_PARK,
+		"description": "Charges once you are close, and leaps small gaps to do it.",
+		"facts": ["First seen: the Park", "Stomp: it scurries off"],
+	},
+	{
+		"id": "robo_vac", "title": "Robo-Vac", "heading": "The pests", "badge": "VAC",
+		"color": Color("3d4350"), "requires_achievement": REACHED_STREET,
+		"description": "Stomp it onto its back, then kick it into everything else.",
+		"facts": ["First seen: Main Street", "Kicked, it bonks other pests"],
+	},
+	{
+		"id": "seagull", "title": "Seagull", "heading": "The pests", "badge": "GULL",
+		"color": Color("9aa3ad"), "requires_achievement": REACHED_PIER,
+		"description": "Patrols the sky and swoops on anything that smells of fries.",
+		"facts": ["First seen: the Pier", "Never swoops into the ground"],
+	},
+	{
+		"id": "hot_sauce", "title": "Hot-Sauce Bottle", "heading": "The pests", "badge": "SAUCE",
+		"color": Color("d9533b"), "requires_achievement": REACHED_MARKET,
+		"description": "Hops in place and spits slow drops in an arc.",
+		"facts": ["First seen: the Night Market", "Stomp: the lid pops"],
+	},
+	{
+		"id": "lunchbox", "title": "Lunchbox", "heading": "The food", "badge": "LUNCH",
+		"color": Color("f2b33d"), "description": "Bonk it from below for whatever is inside.",
+		"facts": ["Contents are always the same", "Empty once opened"],
+	},
+	{
+		"id": "big_burger", "title": "Big Burger", "heading": "The food", "badge": "BIG",
+		"color": Color("d99a4e"), "description": "Makes her Full: the next hit costs Full, not a heart.",
+	},
+	{
+		"id": "golden_bone", "title": "Golden Bone", "heading": "The food", "badge": "BONE",
+		"color": Color("f2c14e"), "description": "A heart back, up to three. Very rare.",
+	},
+	{
+		"id": EXHIBIT_FOOD_TRUCK, "title": "The Food Truck", "heading": "The food", "badge": "TRUCK",
+		"color": Color("fff1d6"), "requires_achievement": CLEARED_BACKYARD,
+		"description": "Waiting at the end of every stage, hatch lit, flag flying.",
+	},
+]

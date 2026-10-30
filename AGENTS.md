@@ -41,8 +41,17 @@ Only what exists so far. `DESIGN.md` §6 is the target layout.
 | `world/paw_particles.gd` | One 64-slot pool of dust, crumbs and feathers; off under reduced motion |
 | `dulce_audio.gd` | Synthesized cues, and `cue_for(event)`: each event's sound and caption |
 | `world/pest_models.gd`, `world/food_models.gd` | Pests, each biome's food flavour, Lunchboxes |
+| `world/outfit_models.gd` | Store cosmetics as meshes; colours read from each item's entry |
+| `world/studio.gd` | The lit `SubViewport` set every portrait uses, and bounds-based framing |
+| `store_preview.gd` / `.tscn` | Dulce wearing one store item; draws once per card |
+| `character_preview.gd` / `.tscn` | Dulce on the setup plinth in her equipped outfit |
+| `gallery_stage.gd` / `.tscn` | The Gallery turntable: `configure`, `set_view`, `set_auto_spin` |
+| `share_art.gd` / `.tscn` | Share-card portrait: victory sit, payload outfit, Big Burger |
+| `intro.tscn` | The four story cards, inheriting the framework intro |
 | `world/biome_props.gd` | Per-biome palettes, props, gate signs and the parallax backdrop |
-| `tools/capture_art.gd` | Dev-only: renders `assets/levels/` stills (needs a window) |
+| `tools/capture_art.gd` | Dev-only: renders `assets/levels/` stills and `assets/game-icon.png` (needs a window) |
+| `tools/tutorial_driver.gd` | Dev-only: Stage 1 autopilot and captions for the walkthrough clip |
+| `assets/video` | `tutorial.ogv` and its poster, recorded from the driver |
 | `assets/icons` | Original white-stroke HUD and touch SVGs |
 | `world/mesh_builder.gd`, `world/daylight.gd` | Adapted copies of Cube Trials' batching and sun rig |
 | `tests` | Standalone Godot `SceneTree` regression scripts |
@@ -64,12 +73,20 @@ godot --headless --path . --script res://games/dulces_adventure/tests/dulce_stre
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_model_test.gd -- --game=all
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_audio_test.gd -- --game=all
 godot --headless --path . --script res://games/dulces_adventure/tests/dulce_stages_test.gd -- --game=all
+godot --headless --path . --script res://games/dulces_adventure/tests/dulce_scene_test.gd -- --game=all
 godot --path . -- --game=dulces_adventure --dulce-seed=42   # replay one seed
 godot --path . --script res://games/dulces_adventure/tools/capture_art.gd -- --only=levels
+godot --path . --script res://games/dulces_adventure/tools/capture_art.gd -- --only=icon
 ```
 
 Re-run `capture_art.gd` after changing a gate chunk, a biome's palette or its
-props, so the level selector's stills match the game.
+props, so the level selector's stills match the game, and with `--only=icon`
+after changing Dulce's head or the burger. Re-record the walkthrough clip
+after changing Stage 1, the HUD or the tutorial captions.
+
+`dulce_scene_test.gd` plays real runs, so it snapshots `store.cfg`,
+`achievements.cfg`, `settings.cfg` and `dulces_adventure.cfg` and puts them
+back. A new test that ends a run must do the same.
 
 A new or edited chunk must pass `dulce_chunks_test.gd`. If the validator
 rejects it, widen or lower the chunk, never the validator: the validator is

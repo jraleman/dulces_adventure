@@ -17,6 +17,8 @@ extends Node3D
 const Art = preload("res://games/dulces_adventure/dulce_art.gd")
 const MeshBuilder = preload("res://games/dulces_adventure/world/mesh_builder.gd")
 const State = preload("res://games/dulces_adventure/run_state.gd")
+const OutfitModels = preload("res://games/dulces_adventure/world/outfit_models.gd")
+const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
 
 const IDLE := "idle"
 const TROT := "trot"
@@ -71,6 +73,8 @@ var _belly: MeshInstance3D
 var _head: Node3D
 var _tail: Node3D
 var _collar: MeshInstance3D
+var _hat: MeshInstance3D
+var _neck: MeshInstance3D
 var _ears: Array[Node3D] = []
 var _legs: Array[Node3D] = []
 var _finish: StandardMaterial3D
@@ -110,7 +114,16 @@ func _init() -> void:
 	_collar.position = COLLAR_AT
 	_collar.material_override = _finish
 	_torso.add_child(_collar)
-	set_collar_color(Art.COLLAR)
+	_neck = MeshInstance3D.new()
+	_neck.name = "Neck"
+	_neck.position = COLLAR_AT
+	_neck.material_override = _finish
+	_torso.add_child(_neck)
+	_hat = MeshInstance3D.new()
+	_hat.name = "Hat"
+	_hat.material_override = _finish
+	_head.add_child(_hat)
+	set_outfit(Options.COLLAR_RED, "", "")
 
 
 ## Which pose the run state calls for; reactions play on top of it.
@@ -146,9 +159,15 @@ func set_victory(value: bool) -> void:
 	_snap = true
 
 
-## Store collars recolour the band (Milestone 7); the default is red.
-func set_collar_color(color: Color) -> void:
-	_collar.mesh = _collar_mesh(color)
+## Dresses her in store items by id: a collar always (the red one if unknown),
+## a hat and a bandana or cape when given. Looks only: nothing here changes
+## how she runs.
+func set_outfit(collar_id: String, hat_id: String, neck_id: String) -> void:
+	if OutfitModels.item(collar_id).is_empty():
+		collar_id = Options.COLLAR_RED
+	_collar.mesh = OutfitModels.collar_mesh(collar_id)
+	_hat.mesh = OutfitModels.hat_mesh(hat_id)
+	_neck.mesh = OutfitModels.neck_mesh(neck_id)
 
 
 ## Feet at the model's bottom centre, facing the way she last moved.
@@ -361,13 +380,3 @@ static func mesh_for(part: String) -> ArrayMesh:
 				mesh.ellipsoid(Vector3(0.035, 0.115, 0), Vector3.ONE * 0.04, Art.MARKINGS, 8)
 		_meshes[part] = mesh.finish()
 	return _meshes[part]
-
-
-static func _collar_mesh(color: Color) -> ArrayMesh:
-	var key := "collar_%s" % color.to_html(false)
-	if not _meshes.has(key):
-		var mesh := MeshBuilder.new()
-		mesh.torus(Vector3.ZERO, 0.062, 0.082, color, Vector3(0, 0, -PI / 2 + 0.55))
-		mesh.ellipsoid(Vector3(0.02, -0.075, 0.0), Vector3(0.025, 0.03, 0.012), Art.MUSTARD, 8)
-		_meshes[key] = mesh.finish()
-	return _meshes[key]

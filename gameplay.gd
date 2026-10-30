@@ -33,6 +33,8 @@ var _controls: RunControls
 var _run_hud: RunHud
 var _records := Records.new()
 var _cues: Dictionary[String, AudioStreamWAV] = {}
+## What she wears, by store item id: collar, hat, neck.
+var _outfit: Array[String] = [Options.COLLAR_RED, "", ""]
 var _start_id := Options.START_BACKYARD
 var _start_biome: int = ChunkLibrary.Biome.BACKYARD
 ## The fixed stage being played, or empty on an endless run.
@@ -45,6 +47,8 @@ var _game_speed := 1.0
 var _day_night_enabled := true
 var _jump_pending := false
 var _ended := false
+## Bottom pixels kept clear for the tutorial recorder's caption card.
+var _capture_inset := 0.0
 
 
 ## GameCatalog discovers the folder; no framework branch knows this id.
@@ -58,6 +62,7 @@ func _load_round_settings() -> void:
 	_kind_pits = Settings.tunable_bool(Options.KIND_PITS_KEY)
 	_game_speed = Settings.tunable(Options.GAME_SPEED_KEY)
 	_day_night_enabled = Settings.tunable_bool(Options.DAY_NIGHT_KEY)
+	_outfit = _equipped_outfit()
 
 
 func _build_playfield() -> void:
@@ -101,7 +106,29 @@ func _reset_round_state() -> void:
 	if _view != null:
 		_view.set_day_night_enabled(_day_night_enabled)
 		_view.configure(_state, _live_chunks())
+		_dress()
 	_sync_hud()
+
+
+## The store's equipped collar, hat and neck piece. Purely cosmetic.
+func _equipped_outfit() -> Array[String]:
+	return [
+		Store.equipped_id(Options.GAME_ID, Options.COLLAR_SLOT),
+		Store.equipped_id(Options.GAME_ID, Options.HAT_SLOT),
+		Store.equipped_id(Options.GAME_ID, Options.BANDANA_SLOT),
+	]
+
+
+func _dress() -> void:
+	if _view != null and _view.dulce != null:
+		_view.dulce.set_outfit(_outfit[0], _outfit[1], _outfit[2])
+
+
+## The store can be opened from the pause menu, so a new hat shows at once.
+func _on_pause_closed() -> void:
+	super()
+	_outfit = _equipped_outfit()
+	_dress()
 
 
 ## The debug seed when one was passed, otherwise a fresh one every run.
@@ -335,6 +362,28 @@ func _next_stage() -> Dictionary:
 	return {}
 
 
+## Treats: the declared rule (score / 100, plus 3 for finishing), and 20 more
+## for clearing a stage (owner decision).
+func _round_points_earned(player_one_total: int, player_two_total: int) -> int:
+	var earned := super(player_one_total, player_two_total)
+	if not _stage.is_empty() and _state.cleared:
+		earned += Options.TREATS_PER_CLEAR
+	return earned
+
+
+## The share card shows the dog that just ran, dressed as she ran.
+func _share_payload() -> Dictionary:
+	var data := super()
+	data["outfit"] = _outfit.duplicate()
+	data["score_caption"] = "SCORE"
+	data["level_id"] = _start_id
+	data["level_title"] = _stage_title()
+	data["distance_m"] = floori(_state.distance_m())
+	if not _stage.is_empty():
+		data["clear_time"] = Stages.time_text(_state.clear_time) if _state.cleared else ""
+	return data
+
+
 func _best_combo_summary() -> String:
 	return "Longest stomp chain x%d  |  Longest clean stretch %d m" % [
 		_state.best_chain, floori(_state.best_clean_m),
@@ -433,6 +482,14 @@ func _set_intense_effects_enabled(value: bool) -> void:
 		_view.set_intense_effects(value)
 
 
+## The tutorial recorder's caption card covers the bottom of the frame. Like
+## the touch buttons, it only lifts the view's ground line clear of it, so
+## the clip keeps the full playfield and a readable Dulce.
+func _set_capture_inset(bottom: float) -> void:
+	_capture_inset = maxf(bottom, 0.0)
+	_layout_view()
+
+
 func _layout_view() -> void:
 	if _view == null:
 		return
@@ -444,7 +501,8 @@ func _layout_view() -> void:
 	_view.size = bounds.size
 	_controls.position = bounds.position
 	_controls.fit(bounds.size, readability)
-	_view.bottom_inset = _controls.covered_height()
+	var under_caption := _capture_inset - (get_viewport_rect().size.y - bounds.end.y)
+	_view.bottom_inset = maxf(_controls.covered_height(), under_caption)
 	_run_hud.fit(readability)
 	_run_hud.position = bounds.position + Vector2.ONE * 12.0 * readability
 	_view.present(0.0)

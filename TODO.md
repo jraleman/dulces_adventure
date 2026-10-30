@@ -37,8 +37,12 @@ Don't start work that depends on an unanswered one.
       a recolour in `dulce_art.gd`, plus ear or tail shape tweaks in
       `world/dulce_model.gd`. Puppy Kraft's TODO lists "overlap with Dulce's
       Adventure" as a blocker for its own art direction.
-- [ ] **Store currency name** (§13.5) — "Treats" is a placeholder. Blocks
-      `STORE_CURRENCY` (Milestone 7).
+- [x] **Store currency name** (§13.5) — **Treats** (owner decision).
+- [x] **Treats payout** — `score / 100` plus 3 per run, plus 20 for clearing
+      a stage; no win bonus, no cap (owner decision; DESIGN §9.2).
+- [x] **Setup plinth** — Dulce is the manifest's single `characters` entry,
+      so the setup screen stands her on the plinth in her outfit (owner
+      decision).
 - [ ] **Standalone title and user dir** (§13.6) —
       `"DeskCanSaw Games/Dulce's Adventure"`, with an apostrophe in
       `custom_user_dir_name`. It can never change after the first ship.
@@ -76,16 +80,26 @@ Don't start work that depends on an unanswered one.
       instructions correctly returns there. Milestone 5 fixed the test to
       apply the router's rule. That is a host-repository change: commit it
       there.
-- [ ] `tests/instructions_video_test.gd` requires **every** game to ship a
+- [x] `tests/instructions_video_test.gd` requires **every** game to ship a
       walkthrough clip and poster, so it fails from the moment `game.gd`
-      exists until Dulce has one. Record a grey-box clip at the end of
-      Milestone 2 (scripted with `tools/tutorial_driver.gd`) rather than
-      faking one, and re-record it in Milestone 7.
-- [ ] `character_preview_scene_path` (§6.3) is only used when the manifest
+      exists until Dulce has one. *Milestone 7 recorded the real clip: an
+      autopilot (`tools/tutorial_driver.gd`) runs Stage 1.*
+- [x] `character_preview_scene_path` (§6.3) is only used when the manifest
       declares `characters`. `mode_select.gd` returns early when
-      `GameSession.character_options()` is empty. The outfit-on-the-plinth
-      preview needs one `characters` entry (Dulce). A single-entry picker
-      would then show too. Check how that looks, or drop the preview.
+      `GameSession.character_options()` is empty. *Dulce is the one
+      `characters` entry (owner decision), so the plinth shows her. The
+      single-entry Dog row hasn't been checked by eye yet: Milestone 8's
+      layout pass.*
+- [ ] `tools/record_tutorials.ps1` (host) can't record Dulce yet: its
+      `-Game` `ValidateSet` doesn't list `dulces_adventure`. Milestone 7
+      recorded the clip on Linux with a scratch harness instead: the host's
+      `tutorial_capture.tscn` inside a fixed 1280×720 `SubViewport`, because
+      Movie Maker under a tiling window manager captured a black, cropped
+      window. Frames → `ffmpeg` (Theora, 960×540, q 6) and the poster from
+      5.6 s. Add the game to the script in Milestone 8 (host integration) and
+      re-record there with the poster time.
+- [ ] One Movie Maker take logged `!isfinite(p_size)` once; it never came
+      back in later takes or in any suite. Watch for it on 4.7.
 - [x] The chunk validator needs at least one `S` (§5.2), but the stream also
       says "a chunk with no marker gets one at its entry seam". Pick one
       rule. As written, the §5.1 `PIT_HOP` example has no `S` and fails the
@@ -100,10 +114,11 @@ Don't start work that depends on an unanswered one.
       directly in `gameplay.gd`, so those buttons aren't rebindable in
       Settings. Accept that (as Cube Trials does), or raise it as framework
       data.
-- [ ] §9.2's "roughly `score / 100`" maps to `points_per_score = 0.01`.
+- [x] §9.2's "roughly `score / 100`" maps to `points_per_score = 0.01`.
       There's no CPU, so `win_bonus` must be 0. Decide `round_bonus` and
       `max_per_round`, and whether clearing a stage pays extra (that has to be
-      a `_round_points_earned` override).
+      a `_round_points_earned` override). *`round_bonus` 3, no cap, and
+      `TREATS_PER_CLEAR` 20 through the override (DESIGN §9.2).*
 - [x] With relative distance, the reach achievements are named after biomes
       ("Off the Leash", PARK) but can be earned from any start. Run 400 m from
       the Park and you get "reached_park" somewhere on Main Street. Keep the
@@ -367,28 +382,49 @@ on.
 
 ## Milestone 7 — Shell features (§7.3, §9.1–§9.4)
 
-- [ ] Store (§9.2): currency (name per §13.5), slots collar, hat and bandana;
-      starter catalogue with the red collar as default; worn in the run, on
-      the plinth, on the share card and in the gallery; `store_preview.tscn`.
-- [ ] `characters` entry for Dulce + `character_preview.tscn` (see the
-      plinth discrepancy above).
-- [ ] Gallery (§9.3): Dulce (idle, Full), every pest, Lunchbox, Big Burger,
-      Golden Bone, a food truck; later biome props gated by reach
-      achievements; `gallery_stage.tscn` with `configure`, `set_view`,
-      `set_auto_spin`.
-- [ ] Share card (§9.4): `share_art.tscn`, Dulce in her outfit in the victory
-      sit, distance headline (or the stage headline), biome, burgers, score,
-      QR.
-- [ ] `GameTheme` (§7.3) + `assets/game-icon.png` captured from the model.
-- [ ] `intro.tscn` — the four story cards (§1).
-- [ ] Instructions copy through `manifest.text` keys.
-- [ ] Credits.
-- [ ] Tutorial video + poster (`tools/tutorial_driver.gd`,
-      `record_tutorials.ps1`).
-- [ ] `tests/dulce_scene_test.gd` (§10): loads under the shell, HUD binds,
-      pause, results, payout.
+- [x] Store (§9.2): Treats; collar, hat and neck slots (hat and neck can be
+      empty); eleven items, the red collar the free default, three gated by
+      achievements; worn in the run, on the plinth, on the share card and in
+      the gallery (`world/outfit_models.gd`); `store_preview.tscn` draws once
+      per card.
+- [x] Payout: `score / 100` + 3 per run through `STORE_CURRENCY`, + 20 for a
+      stage clear through `_round_points_earned`.
+- [x] `characters` entry for Dulce + `character_preview.tscn`: the plinth
+      shows her in her equipped outfit.
+- [x] Gallery (§9.3): Dulce (idle, Full), every pest, Lunchbox, Big Burger,
+      Golden Bone, the food truck; later pests gated by their biome's reach
+      achievement, the truck by clearing Stage 1; `gallery_stage.tscn` with
+      `configure`, `set_view`, `set_auto_spin`.
+- [x] Share card (§9.4): `share_art.tscn`, Dulce in the payload's outfit in
+      the victory sit beside a Big Burger; the shell's card carries the
+      distance or clear-time headline, burgers, score and QR.
+- [x] One portrait set, `world/studio.gd`, for the store, plinth, gallery and
+      share card: daylight rig, camera framed from measured bounds.
+- [x] `GameTheme` (§7.3) + `assets/game-icon.png` captured from the model
+      (`capture_art.gd --only=icon`).
+- [x] `intro.tscn` — the four story cards (§1).
+- [x] Instructions copy through `manifest.text` keys, including the store and
+      gallery intros.
+- [x] Credits.
+- [x] Tutorial video + poster: `tools/tutorial_driver.gd` drives Stage 1 with
+      an autopilot (runs, clears pits, stomps pigeons, hops gnomes) and
+      captions; a take must cover ≥ 90 m, ≥ 5 burgers and a stomp. 27 s clip,
+      poster from 5.6 s. (See the recorder note under discrepancies.)
+- [x] `tests/dulce_scene_test.gd` (§10): loads under the shell, HUD and
+      outfit bind, pause, endless and stage results, payout, the Stage 1
+      clear unlock. Snapshots and restores every save it touches.
+- [ ] Host `tests/store_test.gd` demanded a free default for every item kind,
+      though `GameManifest.store_slots` documents `empty_title` as the
+      alternative. Milestone 7 changed the test so only a kind some slot must
+      always wear needs a default. Host-repository change: commit it there.
 - [ ] **Exit:** `store_test`, `gallery_test`, `share_card_test`,
       `saves_test` and `single_game_test` pass with `--game=all`.
+      *On 4.6.2:* store, gallery, share card, single game and instructions
+      video pass; `saves_test` fails only on its baseline 4.6.2 errors. The
+      crashing suites are unchanged from baseline, and run solo they show
+      only the known non-Dulce failures. Every Dulce suite passes. Still to
+      do: confirm on Godot 4.7, and look over the store, plinth and gallery
+      screens in a window.
 
 ## Milestone 8 — Polish and integration (§8, §9.5, §11) — v1 ships
 

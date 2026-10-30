@@ -388,7 +388,7 @@ dulces_adventure_options.gd # constants-only: tunables, bindings, store, gallery
 gameplay.gd / .tscn         # extends GameShell; inherited scene of game_shell.tscn
 tile_grid.gd                # live tiles the body collides with; the stream feeds it
 run_records.gd              # best runs in user://dulces_adventure.cfg
-intro.tscn                  # four story cards (shared intro shape)
+intro.tscn                  # four story cards, inheriting the framework intro
 run_state.gd                # node-free 120 Hz body, hits, hearts, scoring
 pests.gd                    # node-free enemy behaviours
 chunk_library.gd            # authored chunk grids, legend, validator
@@ -399,11 +399,13 @@ run_controls.gd             # keyboard, gamepad, multitouch
 run_hud.gd                  # hearts, distance, burgers, score, pause
 dulce_audio.gd              # synthesized cues
 dulce_art.gd                # palette, WORLD_SCALE, world_point(), materials
-share_art.gd / .tscn        # portrait of Dulce for the share card
-store_preview.gd / .tscn    # Dulce wearing one item
+share_art.gd / .tscn        # Dulce's victory sit beside a Big Burger for the share card
+store_preview.gd / .tscn    # Dulce wearing one item, drawn once
 gallery_stage.gd / .tscn    # turntable for the Gallery
 character_preview.gd / .tscn # Dulce in her equipped outfit on the setup plinth
-world/dulce_model.gd        # procedural rig: poses, ears/tail, Full state, collar socket
+world/dulce_model.gd        # procedural rig: poses, ears/tail, Full state, outfit sockets
+world/outfit_models.gd      # collar, hat and bandana/cape meshes from the store items
+world/studio.gd             # the lit SubViewport set every portrait above stands in
 world/biome_props.gd        # per-biome palettes, props, gate signs and backdrops (batched)
 world/pest_models.gd        # enemy meshes and their poses
 world/food_models.gd        # burgers, Big Burger, Golden Bone, Lunchbox blocks
@@ -457,7 +459,8 @@ game.supports_multiplayer = false               # v1; see §11
 game.supports_cpu_opponent = false
 game.levels = Options.LEVELS                    # start biomes, achievement-gated
 game.save_files = [{"path": "user://dulces_adventure.cfg", "title": "Best runs",
-		"description": "Best distance and score from each start point."}]
+		"description": "Best distance, score and burgers from each start point, and stage times."}]
+game.characters = Options.CHARACTERS            # Dulce alone, so the plinth shows her
 game.character_preview_scene_path = ".../character_preview.tscn"
 game.tunables / control_bindings / store_* / gallery_* = Options.*
 game.tutorial_video_path / tutorial_poster_path
@@ -575,23 +578,48 @@ The first four also gate the start-biome levels (§5.4).
 
 ### 9.2 Store — currency "Treats"
 
-`store_currency` pays roughly `score / 100` per run *(tune)*. Slots:
-**collar**, **hat**, **bandana**. Items are purely cosmetic and visible in the
-run, the setup plinth, the share card and the gallery. Starter ideas: red
-collar (default), spiked collar, flower crown, tiny chef's hat, sombrero,
-party hat, ketchup-red bandana, mustard bandana, superhero cape (bandana slot).
+A run pays `score / 100` Treats (`points_per_score = 0.01`) plus 3 for
+playing (`round_bonus`). There is no CPU to beat, so `win_bonus` is 0. Clearing
+a stage pays `TREATS_PER_CLEAR` (20) on top, through gameplay's
+`_round_points_earned` override. Slots: **collar**, **hat**, **bandana**; the
+hat and bandana slots can be empty. Items are purely cosmetic and visible in
+the run, the setup plinth, the share card and the gallery; a colour comes from
+the item's own entry, so the store's swatch and the worn mesh always agree.
+
+| Slot | Item | Price | Gate |
+| --- | --- | --- | --- |
+| Collar | Red collar | default | — |
+| Collar | Sky collar | 60 | — |
+| Collar | Spiked collar | 150 | — |
+| Collar | Gold collar | 300 | Clear Stage 5 |
+| Hat | Party hat | 80 | — |
+| Hat | Flower crown | 120 | — |
+| Hat | Tiny chef's hat | 160 | — |
+| Hat | Sombrero | 220 | Run 900 m |
+| Bandana | Ketchup bandana | 70 | — |
+| Bandana | Mustard bandana | 70 | — |
+| Bandana | Superhero cape | 250 | Run 1,500 m |
+
+`store_preview.tscn` draws Dulce wearing one item, once per card (no live
+render loop on a shelf of cards). The setup screen's plinth shows Dulce, the
+manifest's single `characters` entry, in her equipped outfit.
 
 ### 9.3 Gallery
 
-`GALLERY_EXHIBITS`: Dulce (idle, Full), each pest, Lunchbox block, Big
-Burger, Golden Bone, a food truck from the Night Market. Later biome props
-gated by their reach achievement. Stage implements `configure`, `set_view`,
-`set_auto_spin`.
+`GALLERY_EXHIBITS`: Dulce (idle, Full; both in her equipped outfit), pigeon,
+gnome, Lunchbox block, Big Burger and Golden Bone are open from the start.
+Each later pest waits for the reach achievement of the biome it first appears
+in (squirrel: Park, robo-vac: Main Street, seagull: Pier, hot sauce: Night
+Market), and the food truck with its chequered flag waits for clearing
+Stage 1. `gallery_stage.tscn` implements `configure`, `set_view` and
+`set_auto_spin`, framing each exhibit from its measured bounds.
 
 ### 9.4 Share card
 
-Dulce in her equipped outfit in the victory sit, the distance as the headline,
-biome reached, burgers and score; QR to `stats_url`.
+`share_art.tscn`: Dulce in the outfit she ran in (the payload's `outfit`),
+in the victory sit on a little lawn beside a Big Burger, under the Backyard
+sky. The shell's card around it carries the headline: distance on an endless
+run, clear time on a stage, with burgers, score and the QR to `stats_url`.
 
 ### 9.5 Accessibility (non-negotiable)
 
@@ -625,7 +653,7 @@ Headless unless noted; each a standalone `SceneTree` script that exits 0.
 | `dulce_chunks_test.gd` | `validate()` on **every** chunk: seams, max gap/height vs `run_state` constants, spawns, safe ground |
 | `dulce_stream_test.gd` | Same seed ⇒ same world; difficulty ramp; breather spacing; no immediate repeats; window frees old chunks |
 | `dulce_pests_test.gd` | Each enemy's behaviour, robo-vac kick chain, seagull swoop bounds |
-| `dulce_scene_test.gd` | Gameplay scene loads under the shell, HUD binds, pause, results, payout |
+| `dulce_scene_test.gd` | Gameplay scene loads under the shell, HUD and outfit bind, pause, endless and stage results, Treats payout, stage-clear unlock |
 | `dulce_view_test.gd` *(window)* | Real render: Dulce visible and unobstructed, layouts portrait → ultrawide, touch buttons don't cover the ground line |
 
 The framework suites (`game_shell_test`, `game_options_test`,
@@ -690,7 +718,7 @@ reuse Cube Trials' hand-off flow), a daily seed, chase camera, music bed.
    fixed, finishable stages?
 3. **Hearts count** — 3 with a Full buffer (Mario-like), or Cube Trials' 5?
 4. **Hot seat in v1?** Defaulted to v2 to keep v1 small.
-5. **Name of the store currency** — "Treats" is a placeholder.
+5. **Name of the store currency** — *answered:* "Treats" (§9.2).
 6. **Standalone title / user dir name** — "Dulce's Adventure" with an
    apostrophe in `custom_user_dir_name`; confirm before first ship, since it
    can never change afterwards.
