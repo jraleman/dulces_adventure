@@ -20,6 +20,7 @@ const RunHud = preload("res://games/dolces_adventure/run_hud.gd")
 const Records = preload("res://games/dolces_adventure/run_records.gd")
 const Art = preload("res://games/dolces_adventure/dolce_art.gd")
 const DolceAudio = preload("res://games/dolces_adventure/dolce_audio.gd")
+const PAUSE_ICON = preload("res://games/dolces_adventure/assets/icons/pause.svg")
 
 ## Debug flag: replay a seed shown on the results panel.
 const SEED_ARGUMENT := "--dolce-seed="
@@ -49,6 +50,15 @@ var _jump_pending := false
 var _ended := false
 ## Bottom pixels kept clear for the tutorial recorder's caption card.
 var _capture_inset := 0.0
+var _touch_hint_offered := false
+var _header_fonts: Dictionary[Label, int] = {}
+var _header_styles: Dictionary[PanelContainer, StyleBoxFlat] = {}
+var _header_layout := Vector3(-1, -1, -1)
+var _header_touch := false
+var _hud_margins: MarginContainer
+var _normal_margins := PackedInt32Array()
+var _normal_card_minimum := Vector2.ZERO
+var _normal_caption_horizontal := Control.SIZE_SHRINK_CENTER
 
 
 ## GameCatalog discovers the folder; no framework branch knows this id.
@@ -82,6 +92,24 @@ func _build_playfield() -> void:
 	overlay.add_child(_controls)
 	_controls.visible = DisplayServer.is_touchscreen_available()
 	_controls.jump_requested.connect(_queue_jump)
+	_controls.auto_run_requested.connect(_enable_auto_run)
+	_controls.layout_changed.connect(_layout_view)
+	_controls.visibility_changed.connect(_layout_view)
+	_run_hud.resized.connect(_layout_view, CONNECT_DEFERRED)
+	_pause_button.icon = PAUSE_ICON
+	_pause_button.text = ""
+	_pause_button.expand_icon = true
+	_pause_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pause_button.accessibility_name = "Pause"
+	_pause_button.tooltip_text = "Pause the run"
+	_prepare_touch_header()
+	for header: Control in [_player_one_card, _time_label.get_parent().get_parent(),
+			_pause_button, _pause_button.get_parent()]:
+		header.item_rect_changed.connect(_layout_view, CONNECT_DEFERRED)
+	_player_one_score.minimum_size_changed.connect(_fit_touch_score, CONNECT_DEFERRED)
+	var caption := get_node("%AudioCaption") as Control
+	caption.item_rect_changed.connect(_layout_view, CONNECT_DEFERRED)
+	caption.visibility_changed.connect(_layout_view, CONNECT_DEFERRED)
 	get_viewport().size_changed.connect(_layout_view)
 	_layout_view()
 
@@ -163,6 +191,8 @@ func _update_round(delta: float, _time_left: float) -> void:
 	if not _round_active or get_tree().paused or Router.is_transitioning():
 		return
 	var input := _controls.sample(_controller_device())
+	if not is_zero_approx(input["move"]) or input["jump"] or input["run"]:
+		_controls.dismiss_auto_run_hint()
 	_state.advance(delta, input["move"], input["run"], input["jump"], _jump_pending)
 	_jump_pending = false
 	for event in _state.take_events():
@@ -238,6 +268,7 @@ func _handle_gameplay_input(event: InputEvent) -> void:
 
 func _queue_jump() -> void:
 	if _round_active and not get_tree().paused and not _state.over:
+		_controls.dismiss_auto_run_hint()
 		_jump_pending = true
 
 
@@ -459,6 +490,9 @@ func _on_game_setting_changed(key: String, _value: Variant) -> void:
 		_auto_run = Settings.tunable_bool(Options.AUTO_RUN_KEY)
 		if _state != null:
 			_state.auto_run = _auto_run
+		if _controls != null and _auto_run:
+			_controls.dismiss_auto_run_hint()
+		_layout_view()
 	elif key == Options.DAY_NIGHT_KEY:
 		_day_night_enabled = Settings.tunable_bool(Options.DAY_NIGHT_KEY)
 		if _view != null:
@@ -467,7 +501,7 @@ func _on_game_setting_changed(key: String, _value: Variant) -> void:
 		_layout_view()
 
 
-## Ear flop, tail wag and squash will park here too once Dolce has a model.
+## Park Dolce's decorative motion without changing the run model.
 func _set_reduced_motion_enabled(value: bool) -> void:
 	super(value)
 	if _view != null:
@@ -475,7 +509,7 @@ func _set_reduced_motion_enabled(value: bool) -> void:
 
 
 ## Screen shake already respects this through the shell; the view keeps its own
-## copy for the flashes Milestone 4 adds.
+## copy for any game-owned effects.
 func _set_intense_effects_enabled(value: bool) -> void:
 	super(value)
 	if _view != null:
@@ -490,19 +524,151 @@ func _set_capture_inset(bottom: float) -> void:
 	_layout_view()
 
 
+func _enable_auto_run() -> void:
+	Settings.set_value(Options.AUTO_RUN_KEY, true)
+
+
+## Settings preserves unknown keys on disk, but only loads declared tunables.
+## Read this game's onboarding flag without adding a misleading Settings row.
+func _has_seen_touch_hint() -> bool:
+	var cached: Variant = Settings.get_value(Options.TOUCH_HINT_SEEN_KEY)
+	if cached is bool:
+		return cached
+	var file := ConfigFile.new()
+	var status := file.load(Settings.SAVE_PATH)
+	if status == ERR_FILE_NOT_FOUND:
+		return false
+	if status != OK:
+		push_warning("Cannot read Dolce's touch tip setting (error %d)." % status)
+		return true
+	var parts := Options.TOUCH_HINT_SEEN_KEY.split("/", false, 1)
+	var seen: Variant = file.get_value(parts[0], parts[1], false)
+	if not seen is bool:
+		push_warning("Dolce's touch tip setting must be a boolean; leaving it unchanged.")
+		return true
+	return seen
+
+
+func _prepare_touch_header() -> void:
+	_hud_margins = _hud.get_node("Overlay/Margins") as MarginContainer
+	for edge: String in ["left", "top", "right", "bottom"]:
+		_normal_margins.append(_hud_margins.get_theme_constant("margin_" + edge))
+	_normal_card_minimum = _player_one_card.custom_minimum_size
+	var caption := _player_one_card.get_node("Layout/Caption") as Label
+	var audio_caption := get_node("%AudioCaption") as PanelContainer
+	_normal_caption_horizontal = audio_caption.size_flags_horizontal
+	var audio_label := audio_caption.get_node("%CaptionLabel") as Label
+	for label: Label in [_player_one_score, _time_label, _mode_title, _time_caption,
+			caption, audio_label]:
+		_header_fonts[label] = label.get_theme_font_size("font_size")
+	for panel: PanelContainer in [_player_one_card, _time_label.get_parent().get_parent(),
+			audio_caption]:
+		_header_styles[panel] = panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+
+
+## On a short phone the two headline cards take two lines, not three, and
+## retain readable physical text sizes rather than consuming the whole run.
+func _fit_touch_header(readability: float, touch_readability: float) -> void:
+	var touch := _controls.visible
+	var area := get_viewport_rect().size
+	var short := touch and area.x > area.y * 1.15 \
+		and area.y * WorldView.physical_scale(self) < 480.0
+	var font_scale := touch_readability if short else (readability if touch else 1.0)
+	var margin_scale := touch_readability if touch else 1.0
+	var layout := Vector3(font_scale, margin_scale, float(short))
+	if _header_touch == touch and _header_layout.is_equal_approx(layout):
+		return
+	_header_touch = touch
+	_header_layout = layout
+	for label: Label in _header_fonts:
+		var font := 18 if label == _mode_title and touch else _header_fonts[label]
+		label.add_theme_font_size_override("font_size", roundi(font * font_scale))
+	_mode_title.visible = not short
+	_player_one_streak.visible = not touch
+	_player_one_card.custom_minimum_size = Vector2(150 * font_scale, 0) if touch \
+		else _normal_card_minimum
+	var audio_caption := get_node("%AudioCaption") as Control
+	audio_caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL if touch \
+		else _normal_caption_horizontal
+	for panel: PanelContainer in _header_styles:
+		var style := _header_styles[panel].duplicate() as StyleBoxFlat
+		if touch:
+			style.content_margin_left = 12 * font_scale
+			style.content_margin_right = 12 * font_scale
+			style.content_margin_top = 8 * font_scale
+			style.content_margin_bottom = 8 * font_scale
+		panel.add_theme_stylebox_override("panel", style)
+	if touch:
+		Responsive.set_margins(_hud_margins, roundi(16 * margin_scale),
+			roundi(12 * margin_scale), roundi(16 * margin_scale), roundi(12 * margin_scale))
+	else:
+		Responsive.set_margins(_hud_margins, _normal_margins[0], _normal_margins[1],
+			_normal_margins[2], _normal_margins[3])
+
+
+## A long run's score must fit its card without pushing Pause off a phone.
+func _fit_touch_score() -> void:
+	if not _controls.visible:
+		return
+	var font := _player_one_score.get_theme_font("font")
+	var font_size := roundi(_header_fonts[_player_one_score] * _header_layout.x)
+	var width := font.get_string_size(_player_one_score.text,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var style := _player_one_card.get_theme_stylebox("panel")
+	var available := _player_one_card.custom_minimum_size.x - style.get_minimum_size().x
+	font_size = maxi(1, floori(font_size * minf(1.0, available / maxf(width, 1.0))))
+	if font_size != _player_one_score.get_theme_font_size("font_size"):
+		_player_one_score.add_theme_font_size_override("font_size", font_size)
+
+
+## Touch has no keyboard footer; use that space while respecting the shared
+## header and any active audio caption, including at larger UI scales.
+func _playfield_bounds() -> Rect2:
+	if _controls == null or not _controls.visible:
+		return super()
+	var readability := maxf(1.0, 1.0 / maxf(WorldView.physical_scale(self), 0.01) / 1.5)
+	var margin := 16.0 * readability
+	var area := get_viewport_rect().size
+	var time_card := _time_label.get_parent().get_parent() as Control
+	var top := maxf(_player_one_card.get_global_rect().end.y,
+		maxf(time_card.get_global_rect().end.y, _pause_button.get_global_rect().end.y)) + margin
+	var bottom := area.y - margin
+	var caption := get_node("%AudioCaption") as Control
+	if caption.is_visible_in_tree():
+		bottom = minf(bottom, caption.get_global_rect().position.y - margin)
+	return Rect2(Vector2(margin, top), Vector2(
+		maxf(area.x - margin * 2.0, 0.0), maxf(bottom - top, 0.0)
+	))
+
+
 func _layout_view() -> void:
 	if _view == null:
 		return
-	var bounds := _playfield_bounds()
 	# Same rule as Cube Trials: grow the controls when the design canvas is
 	# shown on far fewer physical pixels, as on a phone.
-	var readability := maxf(1.0, 1.0 / maxf(WorldView.physical_scale(self), 0.01) / 1.5)
+	var touch_readability := 1.0 / maxf(WorldView.physical_scale(self), 0.01) / 1.5
+	var readability := maxf(1.0, touch_readability)
+	_pause_button.visible = _controls.visible
+	_pause_button.custom_minimum_size = Vector2.ONE * 72.0 * touch_readability
+	_pause_button.add_theme_constant_override("icon_max_width", roundi(32 * touch_readability))
+	_hint.get_parent().visible = not _controls.visible
+	_fit_touch_header(readability, touch_readability)
+	if _controls.visible:
+		_fit_touch_score()
+	if _controls.visible and not _auto_run and not _touch_hint_offered:
+		_touch_hint_offered = true
+		if not _has_seen_touch_hint():
+			_controls.offer_auto_run()
+			Settings.set_value(Options.TOUCH_HINT_SEEN_KEY, true)
+	var bounds := _playfield_bounds()
 	_view.position = bounds.position
 	_view.size = bounds.size
 	_controls.position = bounds.position
-	_controls.fit(bounds.size, readability)
+	_controls.fit(bounds.size, touch_readability)
 	var under_caption := _capture_inset - (get_viewport_rect().size.y - bounds.end.y)
 	_view.bottom_inset = maxf(_controls.covered_height(), under_caption)
 	_run_hud.fit(readability)
 	_run_hud.position = bounds.position + Vector2.ONE * 12.0 * readability
+	_view.top_inset = _run_hud.position.y - bounds.position.y + _run_hud.size.y \
+		+ 16.0 * touch_readability
 	_view.present(0.0)

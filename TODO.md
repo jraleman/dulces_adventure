@@ -1,13 +1,17 @@
 # Dolce's Adventure — TODO
 
 Progress tracker for implementing [`DESIGN.md`](DESIGN.md). Sections follow the
-milestones in DESIGN §12, with a scaffolding phase first and a **Fixed stages**
-milestone the design does not have yet (see the owner's answers below).
+milestones in DESIGN §12, with a scaffolding phase first.
 Milestones 1–8 are **v1**. Tick a box only when the item works **and** its
 tests pass. Each phase ends with an exit check.
 
 `§n` points at the matching section of `DESIGN.md`. Run commands from
 `godot-base/`. Framework rules from the root `AGENTS.md` still apply.
+
+**v1.0.0 Windows release candidate is built.** Implementation, all 13 game
+suites, all 15 framework suites, both release exports and packaged/native
+smoke checks pass on Godot 4.7.2. Human/device checks and commits below remain
+open; automated goal checks are not full playthroughs of later stages.
 
 ---
 
@@ -34,22 +38,18 @@ Don't start work that depends on an unanswered one.
 - [x] **How Dolce is built** — a procedural rig of rigid parts in GDScript,
       like Chicken Pit's birds, not a Blender GLB (owner decision: Blender
       isn't installed, and procedural parts keep poses testable headless).
-- [ ] **Dolce's real look** (§13.1) — reference photos for coat, ears and
-      markings. Milestone 4 shipped the assumed look (owner decision: fawn,
-      cream chest and muzzle, big upright ears, curled tail). Photos now mean
-      a recolour in `dolce_art.gd`, plus ear or tail shape tweaks in
-      `world/dolce_model.gd`. Puppy Kraft's TODO lists "overlap with Dolce's
-      Adventure" as a blocker for its own art direction.
+- [x] **Dolce's real look** (§13.1) — the owner approved the current
+      procedural fawn/cream look, upright ears and curled tail for v1.
+      Reference photos are optional later recolour/shape work, not a blocker.
 - [x] **Store currency name** (§13.5) — **Treats** (owner decision).
 - [x] **Treats payout** — `score / 100` plus 3 per run, plus 20 for clearing
       a stage; no win bonus, no cap (owner decision; DESIGN §9.2).
 - [x] **Setup plinth** — Dolce is the manifest's single `characters` entry,
       so the setup screen stands her on the plinth in her outfit (owner
       decision).
-- [ ] **Standalone title and user dir** (§13.6) —
+- [x] **Standalone title and user dir** (§13.6) — owner approved
       `"DeskCanSaw Games/Dolce's Adventure"`, with an apostrophe in
       `custom_user_dir_name`. It can never change after the first ship.
-      Blocks Milestone 8.
 - [x] **Stage gates** — Stage 1 open, Stage N+1 opens when Stage N is
       cleared, through five permanent keys `dolces_adventure_cleared_<biome>`
       (owner decision; DESIGN §5.5, §9.1).
@@ -58,31 +58,25 @@ Don't start work that depends on an unanswered one.
 - [x] **Stage failure** — losing the last heart ends the attempt with no
       clear, as on an endless run (owner decision).
 - [x] **Stage length** — about 300 m (owner decision; 280–340 m, tested).
-- [ ] Fold every answer above into `DESIGN.md` (§1, §3, §4.5, §5.4, §6.3,
+- [x] Fold every answer above into `DESIGN.md` (§1, §3, §4.5, §5.4, §6.3,
       §9.1, §10, §12, §13) so the design and this list agree.
 
 ## Discrepancies found while planning
 
-- [ ] The project targets Godot **4.7**, but this machine has **4.6.2**
-      (`/usr/bin/godot`). Install 4.7 before trusting any test result. On
-      4.6.2, **with no Dolce code present**, `accessibility`, `game_shell`,
-      `lives_mode` and `visual_effects` segfault, `saves_test` fails
-      (`saves.gd` parse error, touch-target sizes) and `game_select_test`
-      fails (Back button 42 px). Until 4.7 is installed, a change is checked
-      by diffing against that baseline, and the four crashing suites are run
-      with `--game=dolces_adventure` (only Dolce in the catalog).
-- [ ] **Don't run `--import` with Godot 4.6.2.** It rewrites tracked `.import`
-      files across the host and the submodules (it drops 4.7-only options
-      such as `fix_alpha_border`) and adds untracked `.uid` files. That
-      happened during Milestones 0–5; the stray changes were restored with
-      `git checkout` once found. Dolce's own `.import` files were written by
-      4.6.2 too, so expect 4.7 to add those options on its first import.
-- [ ] `tests/game_select_test.gd` (host) assumed every solo-only game skips
+- [x] Verify on the target engine: **Godot 4.7.2 on Windows** now imports the
+      game and passes all 13 game suites (12 headless, 1 window) and all 15
+      framework suites with `--game=all`. This supersedes the Linux 4.6.2
+      baseline failures noted in earlier milestones. Jump measurements are
+      unchanged: 4.71 tiles high / 6.22 long running, 3.80 high standing.
+- [ ] **Don't run `--import` with Godot 4.6.2.** It drops 4.7-only options
+      such as `fix_alpha_border` from metadata across the host and submodules.
+      Even 4.7 can recreate missing unrelated `.uid` files: snapshot first,
+      preserve other worktrees, and remove only files this import created.
+- [x] `tests/game_select_test.gd` (host) assumed every solo-only game skips
       mode select. Dolce is the first solo-only game with `levels`, which
       `Router.start_selected_game()` sends through mode select, so Back from
       instructions correctly returns there. Milestone 5 fixed the test to
-      apply the router's rule. That is a host-repository change: commit it
-      there.
+      apply the router's rule; the host suite now passes on 4.7.2.
 - [x] `tests/instructions_video_test.gd` requires **every** game to ship a
       walkthrough clip and poster, so it fails from the moment `game.gd`
       exists until Dolce has one. *Milestone 7 recorded the real clip: an
@@ -93,16 +87,16 @@ Don't start work that depends on an unanswered one.
       `characters` entry (owner decision), so the plinth shows her. The
       single-entry Dog row hasn't been checked by eye yet: Milestone 8's
       layout pass.*
-- [ ] `tools/record_tutorials.ps1` (host) can't record Dolce yet: its
-      `-Game` `ValidateSet` doesn't list `dolces_adventure`. Milestone 7
-      recorded the clip on Linux with a scratch harness instead: the host's
-      `tutorial_capture.tscn` inside a fixed 1280×720 `SubViewport`, because
-      Movie Maker under a tiling window manager captured a black, cropped
-      window. Frames → `ffmpeg` (Theora, 960×540, q 6) and the poster from
-      5.6 s. Add the game to the script in Milestone 8 (host integration) and
-      re-record there with the poster time.
-- [ ] One Movie Maker take logged `!isfinite(p_size)` once; it never came
-      back in later takes or in any suite. Watch for it on 4.7.
+- [x] The host recorder accepts `-Games dolces_adventure`. Re-recorded on
+      Windows 4.7.2 after the touch/HUD pass through `tutorial_capture.tscn`
+      and the real Stage 1 driver: Movie Maker at 1280×720 / 30 fps, Theora
+      at 960×540 / q 6, 27 s, poster at the script's default 6.0 s.
+- [x] One old Movie Maker take logged `!isfinite(p_size)` once. It did not
+      recur in the 4.7.2 take or rendered suite.
+- [ ] Host `lives_mode_test` and `single_game_test` exit 0 but log ObjectDB /
+      resource-in-use warnings at shutdown. Verbose output identifies the
+      shared UI's click/focus/back WAVs and Chicken Pit's intro narration.
+      Investigate separately; Dolce's scene/rendered suites have none.
 - [x] The chunk validator needs at least one `S` (§5.2), but the stream also
       says "a chunk with no marker gets one at its entry seam". Pick one
       rule. As written, the §5.1 `PIT_HOP` example has no `S` and fails the
@@ -113,10 +107,9 @@ Don't start work that depends on an unanswered one.
       authored variant glyph?). Add both before writing chunks. *Chose `+`
       for the bone, and authored contents: `?` burger, `!` Big Burger (DESIGN
       §4.4, §5.1).*
-- [ ] The §8 table lists gamepad buttons, but Cube Trials polls the gamepad
-      directly in `gameplay.gd`, so those buttons aren't rebindable in
-      Settings. Accept that (as Cube Trials does), or raise it as framework
-      data.
+- [x] **Gamepad controls** (§8) — the owner approved the current fixed
+      gamepad controls for v1. Keyboard actions remain rebindable; no new
+      framework binding capability is needed.
 - [x] §9.2's "roughly `score / 100`" maps to `points_per_score = 0.01`.
       There's no CPU, so `win_bonus` must be 0. Decide `round_bonus` and
       `max_per_round`, and whether clearing a stage pays extra (that has to be
@@ -134,9 +127,8 @@ Don't start work that depends on an unanswered one.
       *One section per start point (`[backyard]`), fields `distance`, `score`,
       `burgers`, each only ever rising; saves merge (DESIGN §4.5). Stages add
       their own sections in Milestone 6.*
-- [ ] Phones show the keyboard hint in the shell's bottom bar. DESIGN §8 says
-      phones show icons only. Hide or replace the hint when the touch buttons
-      are showing (Milestone 8 touch pass).
+- [x] Hide the shell's keyboard hint when touch icons are visible; reclaim
+      that footer space while keeping active audio captions clear.
 
 ---
 
@@ -163,12 +155,9 @@ on.
 - [x] A `tests/` folder and a smoke test that loads the manifest by path
       (`tests/dolces_adventure_manifest_test.gd`).
 - [x] `godot --headless --path . --import`
-- [ ] **Exit:** all 15 framework suites exit 0 with `--game=all`, and
-      `godot --path . -- --game=dolces_adventure` opens the stub.
-      *Blocked on Godot 4.7.* On 4.6.2 every suite exits as it did before
-      Dolce existed, except `instructions_video_test` (no clip yet, see
-      above). `game_shell_test` and `visual_effects_test` pass with only
-      Dolce in the catalog.
+- [x] **Exit:** all 15 framework suites exit 0 with `--game=all`, and the
+      window suite starts the current gameplay scene under the real shell
+      on Godot 4.7.2. The old stub and 4.6.2 blockers are superseded.
 
 ## Milestone 1 — Feel prototype (§4.1, §4.7, §6.1, §7.1) ⚠ the pillar
 
@@ -197,7 +186,7 @@ on.
       what moves forward, so a resize can't leave it ahead of Dolce, and a
       respawn re-frames the view. Pits get a dark back wall.
 - [x] A grey-box Dolce (`world/dolce_model.gd`, the file Milestone 4 fills
-      with the GLB) and a blob shadow that shrinks with height.
+      with the procedural rig) and a blob shadow that shrinks with height.
 - [x] `run_controls.gd` — keyboard (rebindable actions plus fixed arrow
       keys) and gamepad (stick, D-pad, A jump, X / right trigger run).
 - [x] `tests/dolce_physics_test.gd` (§10), plus one-way platforms, walls,
@@ -249,8 +238,9 @@ on.
       *On 4.6.2:* a scripted run ends in results ("NEW BEST: 422 M!",
       "Unlocked: Off the Leash") through the real shell path, run in a
       throwaway `XDG_DATA_HOME`; `saves_test` fails exactly as it did before
-      Dolce existed. Still to do: confirm on Godot 4.7, play it by hand, and
-      record the grey-box walkthrough clip (see Discrepancies).
+      Dolce existed. *Now on 4.7.2:* the real-scene results and saves suites
+      pass; the procedural-art walkthrough is recorded. Playing by hand is
+      still required.
 
 ## Milestone 3 — Stream (§5.1–§5.2)
 
@@ -280,9 +270,9 @@ on.
       *On 4.6.2:* `dolce_stream_test` builds 1,000 m twice per seed and
       compares chunk ids and tiles, and walks eight seeds' kilometres end to
       end with the validator; all pass. A scripted seed-42 run plays through
-      to results in the real scene. Still to do: confirm on Godot 4.7, and
-      play a few seeds by hand to tune the ramp (150 m per difficulty step is
-      a starting point).
+      to results in the real scene. The stream and real-scene suites also
+      pass on 4.7.2. Still to do: play a few seeds by hand to tune the ramp
+      (150 m per difficulty step is a starting point).
 
 ## Milestone 4 — Dolce (§7.2, §9.6)
 
@@ -310,8 +300,9 @@ on.
       *On 4.6.2:* the grey box is gone. Every pose renders distinctly in a
       contact sheet, and she reads mid-leap in portrait at phone width (about
       7% of it, near Mario's NES share; her hit box sets the limit). Captions
-      are tested. Still to do: hear the cues on real speakers, check her
-      size by hand on a phone, and confirm on Godot 4.7.
+      are tested. *Now on 4.7.2:* the rig/audio suites and real phone-sized
+      window renders pass. Still to do: hear the cues on real speakers and
+      check her size by hand on a physical phone.
 
 ## Milestone 5 — Biomes 2–5 (§4.3, §5.3–§5.4, §7.1)
 
@@ -345,9 +336,10 @@ on.
       *On 4.6.2:* the stream suite walks a full 3,000 m cycle from every
       start point, and the validator finds every pit jumpable. A scripted
       run starts at the Park on a profile with it unlocked, and the setup
-      screen's gates come from the shared, tested level selector. Still to
-      do: run Backyard → Night Market by hand (about 2.2 km), check the
-      unlocks on a fresh profile in the real menus, and confirm on Godot 4.7.
+      screen's gates come from the shared, tested level selector. The stream
+      and framework gates suites now pass on 4.7.2. Still to do: run
+      Backyard → Night Market by hand (about 2.2 km) and check the unlocks
+      on a fresh profile in the real menus.
 - [ ] Polish noted while building: the Market's food trucks and the Pier's
       umbrellas can feel frequent; the Street backdrop is busy. Tune
       `_roll` thresholds and backdrop density after playtests.
@@ -379,9 +371,14 @@ on.
       order, and the endless runs still work.
       *On 4.6.2:* every stage validates end to end, and scripted clears of
       Stage 1 and 2 go through the real scene to "NEW BEST" results and
-      unlock their achievements in a throwaway profile. Still to do: clear
-      all five by hand from a fresh profile (and set target times from
-      that), and confirm on Godot 4.7.
+      unlock their achievements in a throwaway profile. These suites also
+      pass on 4.7.2. Still to do: clear all five by hand from a fresh profile
+      and set target times from that.
+      *v1 release check on 4.7.2:* Stage 1 clears all 298 m through real
+      input actions (24 burgers). The real scene then checks every later
+      stage's goal, results, Treats and sequential unlocks from fresh
+      progression, starting near those goals. All five complete geometries
+      validate. Full human clears of Stages 2-5 remain unverified.
 
 ## Milestone 7 — Shell features (§7.3, §9.1–§9.4)
 
@@ -412,44 +409,75 @@ on.
 - [x] Tutorial video + poster: `tools/tutorial_driver.gd` drives Stage 1 with
       an autopilot (runs, clears pits, stomps pigeons, hops gnomes) and
       captions; a take must cover ≥ 90 m, ≥ 5 burgers and a stomp. 27 s clip,
-      poster from 5.6 s. (See the recorder note under discrepancies.)
+      poster now from 6.0 s. (See the recorder note under discrepancies.)
 - [x] `tests/dolce_scene_test.gd` (§10): loads under the shell, HUD and
-      outfit bind, pause, endless and stage results, payout, the Stage 1
-      clear unlock. Snapshots and restores every save it touches.
-- [ ] Host `tests/store_test.gd` demanded a free default for every item kind,
+      outfit bind, pause, endless results, full input-only Stage 1, all five
+      stage goal/result/payout paths and fresh sequential unlocks.
+      Snapshots and restores every save it touches, including cached unlocks.
+- [x] Host `tests/store_test.gd` demanded a free default for every item kind,
       though `GameManifest.store_slots` documents `empty_title` as the
       alternative. Milestone 7 changed the test so only a kind some slot must
-      always wear needs a default. Host-repository change: commit it there.
-- [ ] **Exit:** `store_test`, `gallery_test`, `share_card_test`,
+      always wear needs a default; it passes on 4.7.2.
+- [x] **Exit:** `store_test`, `gallery_test`, `share_card_test`,
       `saves_test` and `single_game_test` pass with `--game=all`.
-      *On 4.6.2:* store, gallery, share card, single game and instructions
-      video pass; `saves_test` fails only on its baseline 4.6.2 errors. The
-      crashing suites are unchanged from baseline, and run solo they show
-      only the known non-Dolce failures. Every Dolce suite passes. Still to
-      do: confirm on Godot 4.7, and look over the store, plinth and gallery
-      screens in a window.
+      Confirmed on 4.7.2 with all games in the catalog. Manual inspection of
+      the store, plinth and gallery remains separate from this test gate.
 
 ## Milestone 8 — Polish and integration (§8, §9.5, §11) — v1 ships
 
-- [ ] Touch layout pass: buttons ≥ 44 physical px, multi-finger, clear of the
+- [x] Touch layout pass: buttons ≥ 44 physical px, multi-finger, clear of the
       ground line; the one-time Auto-run hint on touchscreens; icons on
-      phones, key hints on wide screens.
-- [ ] Accessibility sweep against §9.5.
-- [ ] `tests/dolce_view_test.gd` *(window)* — Dolce visible and unobstructed,
-      portrait → ultrawide, touch buttons clear of the ground line.
-- [ ] `project.godot`: `config/name.dolces_adventure`,
+      phones, key hints without touch controls. Finger/mouse handoffs,
+      cancellation and drag cannot invent sprint taps or duplicate Jump.
+      The saved tip can be accepted or dismissed across a restart.
+- [x] Automated accessibility sweep against §9.5: model poses and effects,
+      caption coverage, accessible touch names/targets and responsive HUD.
+- [ ] Manual accessibility/playtesting on physical devices and speakers.
+- [x] `tests/dolce_controls_test.gd` — real routed touch events, double taps,
+      handoffs, cancellation, drag, hidden/paused inputs and mouse emulation.
+- [x] `tests/dolce_view_test.gd` *(window)* — actual rendered pixels and
+      whole-body bounds on 320×568, 390×844, 568×320, 844×390, 768×1024,
+      1280×720 and 3440×1440; touch targets clear of the ground, counters,
+      tips and captions. Also long scores, UI scale 1.4, Full, 10,000 burgers,
+      and jump/fall framing with motion enabled.
+- [x] `project.godot`: `config/name.dolces_adventure`,
       `custom_user_dir_name.dolces_adventure` (after §13.6),
       `config/icon.dolces_adventure`,
       `dcs/build/single_game_id.dolces_adventure`,
-      `[share] stats_urls/dolces_adventure` (≤ 42 bytes).
-- [ ] `export_presets.cfg`: a standalone preset with the feature tag; exclude
-      `games/dolces_adventure/*` from the other presets; keep `tools/` out.
-- [ ] `.gitmodules` + gitlink (two commits: game repo, then `dcs_games`).
-- [ ] Root `AGENTS.md`: games table, submodules, options files, test table,
+      `[share] stats_urls/dolces_adventure` (≤ 42 bytes), plus the standalone
+      `1.0.0` version override. Default/collection pins remain unchanged.
+- [x] `export_presets.cfg`: Windows x86_64 standalone with the feature tag,
+      external PCK, and all other games/tests/tools excluded. All existing
+      non-collection presets exclude Dolce; collection still includes it.
+- [x] Host `.gitmodules` and submodule registration use `dolces_adventure`.
+- [ ] Commit game changes, then the host changes and updated gitlink.
+      Pre-existing staged registration edits are preserved; this release
+      work remains unstaged and uncommitted.
+- [x] Root `AGENTS.md`: games table, submodules, options files, test table,
       feature tags, blurb. Update `godot-base/README.md` if it lists games.
-- [ ] Write the folder `README.md` properly (it's a one-line stub).
-- [ ] **Exit:** all framework suites + all game suites exit 0 with
+- [x] Write the folder `README.md`: play, controls/assists, host launch,
+      isolated tests, art generation, records and open release decisions.
+- [x] Feature-specific release version appears in the actual title footer:
+      generic `StudioInfo.version()` override resolution, covered by the
+      host `main_menu_test.gd`. The collection stays at its existing version.
+- [x] Export **Windows - Dolce's Adventure (standalone)** and the collection
+      with official 4.7.2 Windows x86_64 templates. The matching archive's
+      official SHA-256 was verified; templates are in the isolated test profile.
+- [x] Both exact release PCKs pass headless and real-window smoke checks:
+      feature tags, catalog, actual user directories, title/footer, icon,
+      tutorial/poster, previews/gallery/share resources and real gameplay.
+      Standalone has only Dolce and no tests/tools; collection keeps ten games.
+- [x] Both native release EXEs open responsive Windows graphics windows and
+      exit 0 without runtime diagnostics. Dolce's PE product/version metadata
+      matches the approved title and `1.0.0.0`.
+- [x] Package the verified EXE/PCK pair:
+      `build/dolces_adventure/DolcesAdventure-v1.0.0-windows-x86_64.zip`
+      (~46 MB). Unsigned; signing/publication are separate release work.
+- [x] **Test gate:** all framework suites + all game suites exit 0 with
       `--game=all`; window suites run without `--headless`.
+      Godot 4.7.2: 13 game + 15 framework suites pass. This is not the
+      complete human QA: jump feel, physical devices/speakers, later-stage
+      full clears and the long endless run remain open. Export checks now pass.
 
 ---
 

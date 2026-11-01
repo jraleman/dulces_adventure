@@ -9,7 +9,7 @@
 | --- | --- |
 | Game ID | `dolces_adventure` |
 | Title | Dolce's Adventure |
-| Folder | `godot-base/games/dolces_adventure/` (its own Git repository, intended to become the eighth submodule) |
+| Folder | `godot-base/games/dolces_adventure/` (its own Git repository, consumed as a host submodule) |
 | Control style | `GameManifest.CONTROL_STYLE_CUSTOM_KEYS` |
 | Round rules | Game-owned (`uses_shell_round_rules = false`) |
 | Menu order | `9` (after Cube Trials' `8`) |
@@ -29,8 +29,9 @@ with burgers and stomps on top.
 
 It is a side-scrolling platformer in the spirit of *Super Mario Bros.* — run,
 variable-height jump, stomp from above, a power-up that buys you one extra
-hit — shaped as a "how far can you get" run rather than a fixed level with a
-flagpole.
+hit — with both endless seeded runs and five fixed, finishable stages, one per
+biome (§5.5). Endless distance and stage clear time are separate headlines.
+v1 is solo; hot-seat turns are a v2 candidate.
 
 ### Locked pillars
 
@@ -58,8 +59,9 @@ Four short cards, the same shape as Cube Trials' boot intro:
 3. Between her and it: holes, puddles, pigeons and one very rude vacuum robot.
 4. She is small. She is fast. She is *very* hungry. — **Go, Dolce!**
 
-The festival is never "reached": the farther she gets, the closer the smell.
-Biomes (§5.3) are the sense of progress.
+On an endless run the festival is never "reached": the farther she gets, the
+closer the smell. Biomes (§5.3) are the sense of progress. A fixed stage ends
+at its food truck.
 
 ---
 
@@ -96,16 +98,17 @@ including ears — deliberately chunky and readable at phone size.
 ## 3. Core loop
 
 ```
-Title ─► Play ─► Mode select (start biome, outfit preview on the plinth)
+Title ─► Play ─► Mode select (endless start or fixed stage, outfit on the plinth)
      ─► Instructions ─► Run:
             run right ─► jump pits ─► stomp/avoid pests ─► eat burgers
             ─► take a hit? (Full → Normal, Normal → lose a heart, respawn on safe ground)
-            ─► last heart lost ─► results (distance, burgers, stomps, best) ─► Treats payout
+            ─► last heart lost / stage goal ─► results (distance / clear time, stats, best)
+            ─► Treats payout
      ─► Store (cosmetics) / Gallery / Share card
 ```
 
-A run is typically **1–4 minutes**. There is no timer; the clock is shown only
-as a stat.
+An endless run is typically **1–4 minutes** and has no countdown. A stage's
+elapsed model time is its headline, not a time limit.
 
 ---
 
@@ -214,22 +217,31 @@ score = floor(distance_m) * 10 + item points + stomp points
 stomp points: 200, chained stomps without touching ground 200 → 400 → 800 → 1600 (cap)
 ```
 
-**Distance is the headline** on the HUD, results, share card and achievements;
-score is the secondary line. "Best distance" is persisted (in
+**Distance is the headline on endless runs** on the HUD, results, share card
+and reach achievements; stages headline clear time (§5.5). Score is secondary.
+Distance counts from the run's start everywhere, including achievements.
+"Best distance" is persisted (in
 `user://dolces_adventure.cfg`, declared as a `save_files` entry — progress,
 not an option). Layout: one `ConfigFile` section per start point
 (`[backyard]`, later `[park]`, … and the fixed stages), each holding
 `distance`, `score` and `burgers`. Each field only ever goes up, and a save
 merges into the stored file, so a build that doesn't know a section never
-deletes it.
+deletes it. Stage sections (`[stage_backyard]`, etc.) also hold `time_ms`:
+only a clear sets it, and a best time only goes down.
 
 ### 4.6 Auto-run assist
 
 Tunable *Auto-run*, default **off**. A constants-only options file cannot pick
 a per-device default, so the touch HUD instead shows a one-time hint offering
-it when `DisplayServer.is_touchscreen_available()`. When on, Dolce always runs right at
-`RUN_SPEED`; left slows her to `WALK_SPEED` instead of turning. This is what
-makes the game playable one-thumbed on a phone.
+it when `DisplayServer.is_touchscreen_available()`. **Auto-run** enables the
+saved assist; **Not now** or starting to play dismisses it without losing a
+held finger. Showing the offer records
+`game/dolces_adventure_auto_run_hint_seen` in `settings.cfg`, including across
+a restart; this is not another tunable. No offer appears if Auto-run is
+already enabled.
+
+When on, Dolce always runs right at `RUN_SPEED`; left slows her to
+`WALK_SPEED` instead of turning. This makes the game playable one-thumbed.
 
 ### 4.7 The camera never goes back
 
@@ -493,9 +505,9 @@ game.theme = theme                              # §7.3
 
 Chihuahua mix — big upright ears, short muzzle, round eyes, compact body,
 slightly longer legs than a pure chihuahua (the "mix"), curled tail. Coat:
-**fawn/tan with a cream chest and muzzle** *(the assumed look, used until
-reference photos arrive — see §13.1; every coat colour lives in
-`dolce_art.gd`, so photos mean a recolour, not a new rig)*. Collar socket
+**fawn/tan with a cream chest and muzzle**, approved by the owner for v1
+(§13.1). Later reference photos can inform a recolour in `dolce_art.gd`
+or ear/tail adjustments, but are not a release blocker. Collar socket
 for store items; the default collar is red.
 
 Poses (angles on the rig's pivots; `dolce_model.pose_for(state)` picks one):
@@ -526,21 +538,33 @@ real model by `tools/capture_art.gd`).
 
 ## 8. Controls
 
-Rebindable actions in `dolces_adventure_options.gd` (prefix every action and
-key with `dolces_adventure_`):
+Keyboard bindings in `dolces_adventure_options.gd` are rebindable (prefix
+every action and key with `dolces_adventure_`). Arrows and gamepad controls are
+fixed extras, polled by `run_controls.gd`; they are not Settings bindings.
+The owner approved these fixed gamepad controls for v1.
 
 | Action | Keyboard | Gamepad | Touch |
 | --- | --- | --- | --- |
 | Left | A / ← | D-pad / left stick | ◀ button |
 | Right | D / → | D-pad / left stick | ▶ button |
-| Jump | Space / W / ↑ | A | Big jump button (right thumb) |
-| Run | Shift | X / right trigger | Hold ▶ twice-tap, or Auto-run |
+| Jump | Space / ↑ | A | Big jump button (right thumb) |
+| Run | Shift | X / right trigger | Tap ▶, then tap again and hold; or Auto-run |
 | Pause | Escape (shell) | Start | Pause icon |
 
-Touch: icon buttons, ≥ 44 physical px, below/at the edges of the playfield,
-multi-finger like Cube Trials (hold right + tap jump at the same time). Wider
-screens show key hints; phones show icons only; tooltips and screen-reader
-descriptions keep the names.
+Touch: icon buttons, ≥ 44 physical px, below the ground line, multi-finger
+like Cube Trials (hold right + tap jump at the same time). An action remains
+held until its last finger or mouse hold releases. A canceled or dragged
+contact is not a sprint tap; pause, focus loss and hiding the controls clear
+held inputs and the old double-tap window.
+
+Keyboard hints show only without touch controls. The shared pause button is
+an icon with an accessible name. Short touch landscapes use two-line headline
+cards; long scores fit their card without pushing Pause off screen. The tip
+docks above the buttons in portrait or at the upper right on short, wide
+screens. HUD, tip and captions leave the playfield clear; zero-step layout
+redraws reframe immediately, even with motion enabled. A camera zoom floor
+keeps short-screen silhouettes readable where the horizontal pit preview
+permits.
 
 ### Tunables (Settings → Game)
 
@@ -632,6 +656,9 @@ run, clear time on a stage, with burgers, score and the QR to `stats_url`.
 - Audio captions for: hit, heart lost, heart gained, Full gained/lost,
   stomp chain, biome reached, run over.
 - Game speed slider (§8) for players who need more reaction time.
+- Touch targets retain physical size as the window and UI scale change.
+  Audio captions fill the available touch width with readable text and never
+  cover Dolce or a button. Icon controls have tooltips or accessible names.
 
 ### 9.6 Audio — `dolce_audio.gd`
 
@@ -648,18 +675,30 @@ Headless unless noted; each a standalone `SceneTree` script that exits 0.
 
 | Suite | Covers |
 | --- | --- |
+| `dolces_adventure_manifest_test.gd` | Manifest, prefixed keys, shell rules, declared assets and content |
 | `dolce_physics_test.gd` | Accel/decel, max speeds, jump apex for tap vs hold, coyote, buffer, no double jump, fall cap, game-speed scaling |
 | `dolce_rules_test.gd` | Stomp vs side hit, Full ↔ Normal, hearts, i-frames, pit respawn at last `S`, 100-burger heart, stomp chain points, run end |
 | `dolce_chunks_test.gd` | `validate()` on **every** chunk: seams, max gap/height vs `run_state` constants, spawns, safe ground |
 | `dolce_stream_test.gd` | Same seed ⇒ same world; difficulty ramp; breather spacing; no immediate repeats; window frees old chunks |
 | `dolce_pests_test.gd` | Each enemy's behaviour, robo-vac kick chain, seagull swoop bounds |
-| `dolce_scene_test.gd` | Gameplay scene loads under the shell, HUD and outfit bind, pause, endless and stage results, Treats payout, stage-clear unlock |
-| `dolce_view_test.gd` *(window)* | Real render: Dolce visible and unobstructed, layouts portrait → ultrawide, touch buttons don't cover the ground line |
+| `dolce_records_test.gd` | Merged records, monotonic bests, damaged files left untouched |
+| `dolce_stages_test.gd` | Fixed courses, fair seams, goals, seed independence, clocks and clear records |
+| `dolce_model_test.gd` | Procedural rig, poses, reactions, Full and reduced motion |
+| `dolce_audio_test.gd` | Synthesized cues and captions for meaningful events |
+| `dolce_controls_test.gd` | Routed touch events, genuine sprint taps, handoffs, cancellation, dragging, pause and emulated mouse twins |
+| `dolce_scene_test.gd` | Gameplay under the shell, HUD/outfit, pause, results/payout/unlocks, Auto-run tip acceptance, dismissal and restart persistence |
+| `dolce_view_test.gd` *(window)* | Rendered pixels and whole-body bounds; portrait/landscape phones, tablet, ultrawide, long scores, large UI, Full, captions, tip docking and airborne poses |
 
 The framework suites (`game_shell_test`, `game_options_test`,
 `accessibility_test`, `visual_effects_test`, `single_game_test`,
 `store_test`, `gallery_test`, `saves_test`, …) pick the game up automatically
 — run them all with `--game=all` before calling a milestone done.
+
+Run suites serially. Isolate `user://` with a scratch `APPDATA` on Windows or
+`XDG_DATA_HOME` on Linux. The scene and view suites also snapshot disk saves
+and Settings' cache, stopping its pending save timer before restoring.
+Load shell gameplay scenes at runtime after autoloads exist, not by directly
+preloading `gameplay.gd` in a `SceneTree` test.
 
 ---
 
@@ -667,23 +706,40 @@ The framework suites (`game_shell_test`, `game_options_test`,
 
 These are the only edits outside `games/dolces_adventure/`:
 
-- [ ] `project.godot`: `config/name.dolces_adventure`,
+- [x] `project.godot`: `config/name.dolces_adventure`,
       `config/custom_user_dir_name.dolces_adventure="DeskCanSaw Games/Dolce's Adventure"`
       (stable forever once shipped), `config/icon.dolces_adventure`,
       `dcs/build/single_game_id.dolces_adventure`, and
-      `[share] stats_urls/dolces_adventure`.
-- [ ] `export_presets.cfg`: a standalone preset with the feature tag; add
-      `games/dolces_adventure/*` to the other presets' `exclude_filter`.
+      `[share] stats_urls/dolces_adventure`. The feature-specific version
+      is `1.0.0`; other games' versions and the default catalog pin stay unchanged.
+- [x] `export_presets.cfg`: **Windows - Dolce's Adventure (standalone)**,
+      x86_64 release with the feature tag, external PCK, and other games,
+      tests and development tools excluded. Existing non-collection presets
+      exclude Dolce; the collection includes it.
 - [ ] `.gitmodules` + gitlink once the folder has a remote (two commits: one
       in the game repo, one in `dcs_games`).
-- [ ] Root `AGENTS.md`: games table, submodule list, options-file list, test
+- [x] Root `AGENTS.md`: games table, submodule list, options-file list, test
       table, feature-tag list, and the per-game blurb.
-- [ ] `godot-base/README.md` if it lists games.
+- [x] `godot-base/README.md`: launch, game, export and test documentation.
 - [ ] `godot --headless --path . --import` after adding `class_name`s (prefer
       preload-by-path like Cube Trials to avoid needing them).
 
 No framework code changes are expected. If one seems needed, add data to
 `GameManifest` instead of a game-name branch.
+The v1 export check exposed one generic integration fix: `StudioInfo.version()`
+now resolves feature overrides, so a standalone's title footer matches its
+release version without changing the collection's version. The host
+`main_menu_test.gd` covers this; no game-name branch was added.
+
+**v1.0.0 automated release gate:** all 13 game and 15 framework suites pass
+on Godot 4.7.2. Windows standalone and collection exports, headless and
+rendered checks against their exact PCKs, and native EXE boots pass.
+Standalone has only Dolce and the approved save directory; the collection
+keeps all ten games and its existing profile/version. The unsigned EXE/PCK
+pair is packaged in `build/dolces_adventure/DolcesAdventure-v1.0.0-windows-x86_64.zip`.
+Stage 1 is cleared input-only; later scene tests verify goal/results/gates
+near the finish, not full drives. Human feel, physical-device/speaker checks,
+full later-stage clears and publication remain separate from this gate.
 
 ---
 
@@ -696,12 +752,14 @@ No framework code changes are expected. If one seems needed, add data to
    results, achievements for distance. Rules + pests tests.
 3. **Stream.** Chunk library (≥ 15 Backyard chunks), validator, seeded
    stream, difficulty ramp. Chunks + stream tests.
-4. **Dolce.** Blender model, GLB, poses, Full morph, particles, audio.
+4. **Dolce.** Procedural rigid-part rig, poses, Full morph, particles, audio.
 5. **Biomes 2–5.** Props, palettes, remaining enemies, level gates, captured
    level stills.
-6. **Shell features.** Store, gallery, share art, character preview, intro,
+6. **Fixed stages.** Five authored courses, food-truck goals, clear times,
+   sequential stage unlocks and per-stage best records.
+7. **Shell features.** Store, gallery, share art, character preview, intro,
    tutorial video, credits, theme, icon.
-7. **Polish & integration.** Touch layouts, accessibility sweep, framework
+8. **Polish & integration.** Touch layouts, accessibility sweep, framework
    suites with `--game=all`, export preset, `AGENTS.md`/README updates.
 
 **v2 candidates:** slopes, hot-seat turns (P1/P2/P3, best distance wins —
@@ -709,16 +767,24 @@ reuse Cube Trials' hand-off flow), a daily seed, chase camera, music bed.
 
 ---
 
-## 13. Open questions for the owner
+## 13. Owner decisions and open questions
 
-1. **Dolce's real look** — is she based on a real dog? Reference photos would
-   pin coat colours, ear shape and markings (§7.2 assumes fawn with cream).
-2. **Endless vs authored levels** — this doc picks endless (seeded chunks) to
-   match "go as far as possible". Confirm, or should there also be a few
-   fixed, finishable stages?
-3. **Hearts count** — 3 with a Full buffer (Mario-like), or Cube Trials' 5?
-4. **Hot seat in v1?** Defaulted to v2 to keep v1 small.
-5. **Name of the store currency** — *answered:* "Treats" (§9.2).
-6. **Standalone title / user dir name** — "Dolce's Adventure" with an
-   apostrophe in `custom_user_dir_name`; confirm before first ship, since it
-   can never change afterwards.
+1. **Dolce's real look** — answered: the current procedural fawn/cream look
+   is approved for v1. Reference photos are optional later art work.
+2. **Endless vs authored levels** — answered: both, including one fixed
+   stage per biome (§5.5).
+3. **Hearts count** — answered: three, maximum three, plus the Full buffer.
+4. **Hot seat in v1?** — answered: v2; v1 is solo.
+5. **Store currency** — answered: Treats; payout is score / 100 plus three
+   per run and twenty per clear, with no win bonus or cap (§9.2).
+6. **Standalone title / user dir name** — answered: **Dolce's Adventure**
+   and the permanent `"DeskCanSaw Games/Dolce's Adventure"` directory,
+   including the apostrophe.
+7. **Gamepad rebinding** — answered: keep the current fixed gamepad controls
+   for v1; keyboard action bindings remain rebindable.
+
+Other locked answers, also tracked in `TODO.md`: the heroine is Dolce, with
+new source/save names only and no legacy aliases; her rig uses procedural
+rigid parts; the setup plinth shows the single character in her outfit;
+distance is relative everywhere; stages are roughly 300 m with sequential
+clear gates, a clear-time headline and last-heart failure (§5.5).

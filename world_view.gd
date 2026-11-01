@@ -26,6 +26,9 @@ const VISIBLE_TILES_WIDE := 18.0
 ## and its landing to fit ahead of her.
 const VISIBLE_TILES_WIDE_PORTRAIT := 9.0
 const VISIBLE_TILES_HIGH := 10.0
+## Short screens may show fewer vertical tiles, but never shrink Dolce below
+## a readable silhouette. The horizontal preview of pits still takes priority.
+const MIN_PHYSICAL_TILE_SIZE := 30.0
 ## How far the soil runs below the deepest row, past any frame's bottom edge.
 const BEDROCK_TILES := 24.0
 ## Dolce sits left of centre, so more of what is coming is on screen.
@@ -39,9 +42,6 @@ const MAX_RENDER_HEIGHT := 1600
 ## Food turns slowly on the spot so it reads as a pickup; reduced motion parks it.
 const FOOD_SPIN := 1.6
 const FOOD_PARKED_ANGLE := 0.5
-## Never let the ground line climb above this much of the frame to clear the
-## touch buttons; on a very short screen they overlap the ground instead.
-const HIGHEST_GROUND_LINE := 0.55
 ## One puff of dust behind her paws every this many metres at a run.
 const FOOTSTEP_METRES := 0.45
 const FOOTSTEP_SPEED := 150.0
@@ -80,6 +80,8 @@ var _far_ground: MeshInstance3D
 var _far_ground_finish: StandardMaterial3D
 ## Pixels at the bottom of this control covered by touch buttons.
 var bottom_inset := 0.0
+## The counters cover the upper edge; keep essential jump/fall poses below them.
+var top_inset := 0.0
 var _finish: StandardMaterial3D
 var _items: Dictionary[Vector2i, MeshInstance3D] = {}
 var _pests: Dictionary[int, MeshInstance3D] = {}
@@ -548,7 +550,9 @@ func _present_camera(delta: float) -> void:
 		return
 	var portrait := size.y > size.x * 0.95
 	var wide := VISIBLE_TILES_WIDE_PORTRAIT if portrait else VISIBLE_TILES_WIDE
-	_zoom = minf(size.x / (wide * Grid.TILE), size.y / (VISIBLE_TILES_HIGH * Grid.TILE))
+	var readable_zoom := MIN_PHYSICAL_TILE_SIZE / (Grid.TILE * maxf(physical_scale(self), 0.01))
+	_zoom = minf(size.x / (wide * Grid.TILE),
+		maxf(size.y / (VISIBLE_TILES_HIGH * Grid.TILE), readable_zoom))
 	var view_size := size / _zoom
 	# Forward only: the left edge never scrolls back toward the start. It is the
 	# edge, not the centre, that is kept, so a narrower window after a resize or
@@ -559,13 +563,14 @@ func _present_camera(delta: float) -> void:
 	var seam := ChunkLibrary.SEAM_ROW * Grid.TILE
 	# Lift the ground line clear of any touch buttons along the bottom edge.
 	var clear := 1.0 - (bottom_inset + 12.0) / size.y if bottom_inset > 0.0 else 1.0
-	var ground_line := clampf(minf(GROUND_LINE, clear), HIGHEST_GROUND_LINE, GROUND_LINE)
+	var ground_line := minf(GROUND_LINE, clear)
 	var target_y := seam - view_size.y * (ground_line - 0.5)
 	# Rise with her only once she nears the top of the frame.
-	var ceiling := target_y - view_size.y * 0.3
+	var ceiling := target_y - view_size.y * 0.5 + maxf(size.y * 0.2, top_inset) / _zoom
 	if state.position.y - State.BODY_SIZE.y < ceiling:
 		target_y += state.position.y - State.BODY_SIZE.y - ceiling
-	if reduced_motion or not _camera_ready:
+	# A zero-step redraw is a layout/settings change, which must frame at once.
+	if reduced_motion or not _camera_ready or is_zero_approx(delta):
 		camera.y = target_y
 	else:
 		camera.y = lerpf(camera.y, target_y, 1.0 - exp(-delta * 5.0))

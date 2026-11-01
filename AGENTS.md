@@ -7,8 +7,9 @@ Guidance for AI coding agents working in this repository.
 A self-contained **Godot 4.7 game folder**, consumed at
 `godot-base/games/dolces_adventure` by the DeskCanSaw base project. It is not
 a standalone Godot project: the host owns `project.godot`, autoloads, menus,
-settings, pause, results, sharing and achievements. Read the host's root
-`AGENTS.md` first; its framework/game boundary overrides anything here.
+settings, pause, results, sharing and achievements. Read the host repository's
+root `AGENTS.md` (`..\..\..\AGENTS.md`) first; its framework/game boundary
+overrides anything here.
 
 Read `DESIGN.md` before changing mechanics, and `TODO.md` for what is built,
 what is next and which owner decisions are still open. The game is a
@@ -73,7 +74,9 @@ godot --headless --path . --script res://games/dolces_adventure/tests/dolce_stre
 godot --headless --path . --script res://games/dolces_adventure/tests/dolce_model_test.gd -- --game=all
 godot --headless --path . --script res://games/dolces_adventure/tests/dolce_audio_test.gd -- --game=all
 godot --headless --path . --script res://games/dolces_adventure/tests/dolce_stages_test.gd -- --game=all
+godot --headless --path . --script res://games/dolces_adventure/tests/dolce_controls_test.gd -- --game=all
 godot --headless --path . --script res://games/dolces_adventure/tests/dolce_scene_test.gd -- --game=all
+godot --path . --script res://games/dolces_adventure/tests/dolce_view_test.gd -- --game=all
 godot --path . -- --game=dolces_adventure --dolce-seed=42   # replay one seed
 godot --path . --script res://games/dolces_adventure/tools/capture_art.gd -- --only=levels
 godot --path . --script res://games/dolces_adventure/tools/capture_art.gd -- --only=icon
@@ -82,11 +85,18 @@ godot --path . --script res://games/dolces_adventure/tools/capture_art.gd -- --o
 Re-run `capture_art.gd` after changing a gate chunk, a biome's palette or its
 props, so the level selector's stills match the game, and with `--only=icon`
 after changing Dolce's head or the burger. Re-record the walkthrough clip
-after changing Stage 1, the HUD or the tutorial captions.
+after changing Stage 1, the HUD or the tutorial captions, using the host's
+`tools\record_tutorials.ps1 -Godot <exe> -Games dolces_adventure -Variants solo -Quality 6`.
 
-`dolce_scene_test.gd` plays real runs, so it snapshots `store.cfg`,
-`achievements.cfg`, `settings.cfg` and `dolces_adventure.cfg` and puts them
-back. A new test that ends a run must do the same.
+`dolce_scene_test.gd` plays real runs; it and `dolce_view_test.gd` snapshot `store.cfg`,
+`achievements.cfg`, `settings.cfg` and `dolces_adventure.cfg` and put them
+back, including Settings' cached values and pending save timer. A new test
+that ends a run must do the same.
+
+`dolce_view_test.gd` requires a real window. Its optional
+`--dolce-view-captures=<absolute directory>` writes rendered layout screenshots.
+Load `gameplay.tscn` at runtime after autoloads exist: directly checking or
+preloading `gameplay.gd` before then cannot resolve `Settings`.
 
 A new or edited chunk must pass `dolce_chunks_test.gd`. If the validator
 rejects it, widen or lower the chunk, never the validator: the validator is
@@ -94,8 +104,12 @@ the "always fair" pillar.
 
 A test or a scripted run that can finish a run writes the player's real
 `dolces_adventure.cfg` and `achievements.cfg`. Point `run_records.gd` at a
-scratch path, or on Linux run Godot with `XDG_DATA_HOME` set to a scratch
-directory, which gives it a throwaway `user://`.
+scratch path, or run Godot with `APPDATA` on Windows / `XDG_DATA_HOME` on Linux
+set to a scratch directory, which gives it a throwaway `user://`. Set the
+environment in every fresh shell; on Windows also set `LOCALAPPDATA` there.
+Windows GUI-subsystem Godot executables need `Start-Process -Wait -PassThru`
+and an exit-code check when used in a test runner; a bare invocation may not
+wait. `README.md` has a PowerShell example.
 
 The physics suite prints the measured jump limits. If a `run_state.gd`
 constant changes, those numbers change, and so does what the chunk validator

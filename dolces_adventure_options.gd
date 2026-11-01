@@ -12,6 +12,8 @@ const GAME_ID := "dolces_adventure"
 const SAVE_PATH := "user://dolces_adventure.cfg"
 
 const AUTO_RUN_KEY := "game/dolces_adventure_auto_run"
+## Onboarding belongs in settings, but is not a player-facing tunable.
+const TOUCH_HINT_SEEN_KEY := "game/dolces_adventure_auto_run_hint_seen"
 const KIND_PITS_KEY := "game/dolces_adventure_kind_pits"
 const GAME_SPEED_KEY := "game/dolces_adventure_game_speed"
 const DAY_NIGHT_KEY := "game/dolces_adventure_day_night"
