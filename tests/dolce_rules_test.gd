@@ -7,10 +7,10 @@ extends SceneTree
 ## tiny course built through `chunk_library.build()`, the same path the run
 ## uses, and every expected number is quoted from the model's constants.
 
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const Pests = preload("res://games/dulces_adventure/pests.gd")
-const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const Pests = preload("res://games/dolces_adventure/pests.gd")
+const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
 
 const STEP := State.STEP
 const TILE := Grid.TILE
@@ -359,7 +359,7 @@ func _expect(condition: bool, message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("Dulce rules tests passed.")
+		print("Dolce rules tests passed.")
 		quit(0)
 		return
 	for failure in _failures:

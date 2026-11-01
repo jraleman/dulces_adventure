@@ -1,6 +1,6 @@
 extends RefCounted
 
-## Best runs, kept in `user://dulces_adventure.cfg` (DESIGN §4.5).
+## Best runs, kept in `user://dolces_adventure.cfg` (DESIGN §4.5).
 ##
 ## One `ConfigFile` section per start point (`[backyard]`, `[park]`, …) and
 ## per fixed stage (`[stage_backyard]`, …), each holding `distance`, `score`
@@ -9,9 +9,9 @@ extends RefCounted
 ## attempt never sets one. A save merges into the stored file rather than
 ## rebuilding it, so a build that does not know a section never deletes it.
 ## The file is declared in the manifest's `save_files`, so the Saves screen
-## backs it up, restores it and deletes it with the rest of Dulce's progress.
+## backs it up, restores it and deletes it with the rest of Dolce's progress.
 
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
 
 const FIELDS: Array[String] = ["distance", "score", "burgers"]
 ## Fields where smaller is better; 0 means "none yet".

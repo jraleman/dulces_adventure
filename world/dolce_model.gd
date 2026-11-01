@@ -1,6 +1,6 @@
 extends Node3D
 
-## Dulce in the 3D world: a rig of rigid, vertex-coloured parts that reads
+## Dolce in the 3D world: a rig of rigid, vertex-coloured parts that reads
 ## `run_state.gd` and never feeds back into it.
 ##
 ## Built from rounded primitives in GDScript, like Chicken Pit's birds, so it
@@ -8,17 +8,17 @@ extends Node3D
 ## GLB could replace the parts behind the same calls). Head, ears, tail, four
 ## legs and a collar socket each hang off their own pivot, and a pose is just
 ## an angle per pivot. The look is DESIGN §7.2's assumed one: all its colours
-## live in `dulce_art.gd`.
+## live in `dolce_art.gd`.
 ##
 ## Reduced motion drops the decorative motion (ear flop, tail wag, squash and
 ## stretch, the Full bounce) but keeps every pose, so jump, apex, fall and run
 ## still read differently (DESIGN §9.5).
 
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const MeshBuilder = preload("res://games/dulces_adventure/world/mesh_builder.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const OutfitModels = preload("res://games/dulces_adventure/world/outfit_models.gd")
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const MeshBuilder = preload("res://games/dolces_adventure/world/mesh_builder.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const OutfitModels = preload("res://games/dolces_adventure/world/outfit_models.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
 
 const IDLE := "idle"
 const TROT := "trot"
@@ -89,7 +89,7 @@ var _snap := true
 
 
 func _init() -> void:
-	name = "Dulce"
+	name = "Dolce"
 	_finish = Art.material(0.75)
 	_rig = Node3D.new()
 	_rig.name = "Rig"
@@ -342,7 +342,7 @@ func _part(parent: Node3D, part: String) -> MeshInstance3D:
 	return body
 
 
-## Each part's mesh, built once and shared by every Dulce on screen.
+## Each part's mesh, built once and shared by every Dolce on screen.
 static func mesh_for(part: String) -> ArrayMesh:
 	if not _meshes.has(part):
 		var mesh := MeshBuilder.new()

@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://sf8ad7ciq4pm"
-path="res://.godot/imported/pier.png-1fb2ad7651be39b4415e4df2b1aad966.ctex"
+path="res://.godot/imported/pier.png-8ee3ac682ffb84ccca3cc936c0abfb01.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://games/dulces_adventure/assets/levels/pier.png"
-dest_files=["res://.godot/imported/pier.png-1fb2ad7651be39b4415e4df2b1aad966.ctex"]
+source_file="res://games/dolces_adventure/assets/levels/pier.png"
+dest_files=["res://.godot/imported/pier.png-8ee3ac682ffb84ccca3cc936c0abfb01.ctex"]
 
 [params]
 

@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dqp1gf01wr44j"
-path="res://.godot/imported/stage_backyard.png-d5e0f24f79a7ced1f1cc50deae5a2b0e.ctex"
+path="res://.godot/imported/stage_backyard.png-b779ca13c6f11b1bf76811fecdbf37e9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://games/dulces_adventure/assets/levels/stage_backyard.png"
-dest_files=["res://.godot/imported/stage_backyard.png-d5e0f24f79a7ced1f1cc50deae5a2b0e.ctex"]
+source_file="res://games/dolces_adventure/assets/levels/stage_backyard.png"
+dest_files=["res://.godot/imported/stage_backyard.png-b779ca13c6f11b1bf76811fecdbf37e9.ctex"]
 
 [params]
 

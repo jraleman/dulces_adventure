@@ -9,9 +9,9 @@ extends SceneTree
 ## headless compile. Every save file a run can touch is snapshotted first and
 ## put back at the end, so the suite never changes a player's progress.
 
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
 
 const SAVES: Array[String] = [
 	"user://store.cfg", "user://achievements.cfg", "user://settings.cfg", Options.SAVE_PATH,
@@ -44,7 +44,7 @@ func _run() -> void:
 
 
 func _open() -> Node:
-	var packed := load("res://games/dulces_adventure/gameplay.tscn") as PackedScene
+	var packed := load("res://games/dolces_adventure/gameplay.tscn") as PackedScene
 	var game := packed.instantiate()
 	get_root().add_child(game)
 	# The first round starts once the opening transition and countdown allow.
@@ -60,12 +60,12 @@ func _test_endless_run(store: Node) -> void:
 	var game := await _open()
 	var state := game.get("_state") as State
 	_expect(state != null and game.get("_stage").is_empty(), "An endless run starts in the Backyard.")
-	_expect((game.get_node("%ModeTitle") as Label).text == "DULCE'S ADVENTURE",
+	_expect((game.get_node("%ModeTitle") as Label).text == "DOLCE'S ADVENTURE",
 		"The HUD is titled from the manifest.")
 	_expect((game.get_node("%TimeLabel") as Label).text == "0 m",
 		"Distance takes the big HUD card on an endless run.")
-	var collar := game.get("_view").dulce.get_node("Rig/Torso/Collar") as MeshInstance3D
-	_expect(collar.mesh != null, "Dulce is dressed in her equipped collar.")
+	var collar := game.get("_view").dolce.get_node("Rig/Torso/Collar") as MeshInstance3D
+	_expect(collar.mesh != null, "Dolce is dressed in her equipped collar.")
 	game.call("open_pause_menu")
 	await process_frame
 	_expect(paused, "The shell's pause menu opens over the run.")
@@ -168,7 +168,7 @@ func _expect(condition: bool, message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("Dulce scene tests passed.")
+		print("Dolce scene tests passed.")
 		quit(0)
 		return
 	for failure in _failures:

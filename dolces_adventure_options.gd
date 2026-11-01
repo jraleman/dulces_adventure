@@ -5,26 +5,26 @@ extends RefCounted
 ## Constants only, so headless tests can import the keys without touching an
 ## autoload. The game's scenes read the same constants back through `Settings`.
 
-const GAME_ID := "dulces_adventure"
+const GAME_ID := "dolces_adventure"
 
 ## The headline record lives in this file (DESIGN §4.5). It is progress, not an
 ## option, so it is declared as a `save_files` entry and never as a tunable.
-const SAVE_PATH := "user://dulces_adventure.cfg"
+const SAVE_PATH := "user://dolces_adventure.cfg"
 
-const AUTO_RUN_KEY := "game/dulces_adventure_auto_run"
-const KIND_PITS_KEY := "game/dulces_adventure_kind_pits"
-const GAME_SPEED_KEY := "game/dulces_adventure_game_speed"
-const DAY_NIGHT_KEY := "game/dulces_adventure_day_night"
+const AUTO_RUN_KEY := "game/dolces_adventure_auto_run"
+const KIND_PITS_KEY := "game/dolces_adventure_kind_pits"
+const GAME_SPEED_KEY := "game/dolces_adventure_game_speed"
+const DAY_NIGHT_KEY := "game/dolces_adventure_day_night"
 
-const LEFT := &"dulces_adventure_left"
-const RIGHT := &"dulces_adventure_right"
-const JUMP := &"dulces_adventure_jump"
-const RUN := &"dulces_adventure_run"
+const LEFT := &"dolces_adventure_left"
+const RIGHT := &"dolces_adventure_right"
+const JUMP := &"dolces_adventure_jump"
+const RUN := &"dolces_adventure_run"
 ## Every action the run reads each step, so held keys never leak into menus.
 const RUN_ACTIONS: Array[StringName] = [LEFT, RIGHT, JUMP, RUN]
 
-const HEADING := "Dulce's Adventure"
-const ASSIST_HEADING := "Dulce's Adventure - assists"
+const HEADING := "Dolce's Adventure"
+const ASSIST_HEADING := "Dolce's Adventure - assists"
 
 ## Assists never block achievements (DESIGN §8), so none of these is checked
 ## when a round awards them.
@@ -33,7 +33,7 @@ const TUNABLES: Array[Dictionary] = [
 		"key": AUTO_RUN_KEY, "type": GameManifest.OPTION_TOGGLE,
 		"default": false, "title": "Auto-run", "heading": ASSIST_HEADING,
 		"description": (
-			"Dulce always runs right. Left slows her down instead of turning, "
+			"Dolce always runs right. Left slows her down instead of turning, "
 			+ "so the game plays with one thumb."
 		),
 	},
@@ -62,23 +62,23 @@ const TUNABLES: Array[Dictionary] = [
 ## gameplay scene reads directly, as Cube Trials does.
 const CONTROL_BINDINGS: Array[Dictionary] = [
 	{
-		"key": "controls/dulces_adventure_left", "action": LEFT,
+		"key": "controls/dolces_adventure_left", "action": LEFT,
 		"default": KEY_A, "title": "Move left", "player": 0, "movement": true,
 		"description": "Walk back, or brake while Auto-run is on.", "heading": HEADING,
 	},
 	{
-		"key": "controls/dulces_adventure_right", "action": RIGHT,
+		"key": "controls/dolces_adventure_right", "action": RIGHT,
 		"default": KEY_D, "title": "Move right", "player": 0, "movement": true,
 		"description": "Walk toward the food festival.", "heading": HEADING,
 	},
 	{
-		"key": "controls/dulces_adventure_jump", "action": JUMP,
+		"key": "controls/dolces_adventure_jump", "action": JUMP,
 		"default": KEY_SPACE, "title": "Jump", "player": 0,
 		"description": "Hold for a high jump, tap for a hop. Hold it on a stomp to bounce higher.",
 		"heading": HEADING,
 	},
 	{
-		"key": "controls/dulces_adventure_run", "action": RUN,
+		"key": "controls/dolces_adventure_run", "action": RUN,
 		"default": KEY_SHIFT, "title": "Run", "player": 0,
 		"description": "Hold to sprint. Running jumps go higher and farther.",
 		"heading": HEADING,
@@ -86,24 +86,24 @@ const CONTROL_BINDINGS: Array[Dictionary] = [
 ]
 
 ## Achievement keys are save keys in `user://achievements.cfg`: stable forever.
-const REACHED_PARK := "dulces_adventure_reached_park"
-const REACHED_STREET := "dulces_adventure_reached_street"
-const REACHED_PIER := "dulces_adventure_reached_pier"
-const REACHED_MARKET := "dulces_adventure_reached_market"
-const HUNDRED := "dulces_adventure_hundred"
-const COMBO := "dulces_adventure_combo"
-const CLEAN := "dulces_adventure_clean"
+const REACHED_PARK := "dolces_adventure_reached_park"
+const REACHED_STREET := "dolces_adventure_reached_street"
+const REACHED_PIER := "dolces_adventure_reached_pier"
+const REACHED_MARKET := "dolces_adventure_reached_market"
+const HUNDRED := "dolces_adventure_hundred"
+const COMBO := "dolces_adventure_combo"
+const CLEAN := "dolces_adventure_clean"
 ## Metres run in one run, counted from wherever it started (owner decision:
 ## distance is relative everywhere). The first four also gate start points.
 const REACH_METRES := {
 	REACHED_PARK: 400, REACHED_STREET: 900, REACHED_PIER: 1500, REACHED_MARKET: 2200,
 }
 ## Clearing a stage opens the next (owner decision). Save keys, permanent.
-const CLEARED_BACKYARD := "dulces_adventure_cleared_backyard"
-const CLEARED_PARK := "dulces_adventure_cleared_park"
-const CLEARED_STREET := "dulces_adventure_cleared_street"
-const CLEARED_PIER := "dulces_adventure_cleared_pier"
-const CLEARED_MARKET := "dulces_adventure_cleared_market"
+const CLEARED_BACKYARD := "dolces_adventure_cleared_backyard"
+const CLEARED_PARK := "dolces_adventure_cleared_park"
+const CLEARED_STREET := "dolces_adventure_cleared_street"
+const CLEARED_PIER := "dolces_adventure_cleared_pier"
+const CLEARED_MARKET := "dolces_adventure_cleared_market"
 const HUNDRED_BURGERS := 100
 const COMBO_CHAIN := 4
 const CLEAN_METRES := 500
@@ -122,7 +122,7 @@ const STAGE_PIER := "stage_pier"
 const STAGE_MARKET := "stage_market"
 ## Each start point's still, captured from the real chunks by
 ## `tools/capture_art.gd`.
-const LEVEL_ART := "res://games/dulces_adventure/assets/levels/"
+const LEVEL_ART := "res://games/dolces_adventure/assets/levels/"
 
 ## Start points and fixed stages for the shared level selector (DESIGN §5.4,
 ## §5.5). Each later start point opens once a run has covered that far,
@@ -131,7 +131,7 @@ const LEVEL_ART := "res://games/dulces_adventure/assets/levels/"
 const LEVELS: Array[Dictionary] = [
 	{
 		"id": START_BACKYARD, "title": "Endless - Backyard", "icon": LEVEL_ART + "backyard.png",
-		"description": "From Dulce's front door, past the picket fence. Pigeons and gnomes.",
+		"description": "From Dolce's front door, past the picket fence. Pigeons and gnomes.",
 	},
 	{
 		"id": START_PARK, "title": "Endless - the Park", "icon": LEVEL_ART + "park.png",
@@ -187,12 +187,12 @@ const LEVELS: Array[Dictionary] = [
 	},
 ]
 
-## Dulce is the one character; the setup screen stands her on its plinth in
+## Dolce is the one character; the setup screen stands her on its plinth in
 ## whatever she is wearing (owner decision).
-const CHARACTER_ID := "dulce"
+const CHARACTER_ID := "dolce"
 const CHARACTERS: Array[Dictionary] = [
 	{
-		"id": CHARACTER_ID, "title": "Dulce",
+		"id": CHARACTER_ID, "title": "Dolce",
 		"description": "A small, cheerful chihuahua mix with a very big appetite.",
 	},
 ]
@@ -213,24 +213,24 @@ const STORE_CURRENCY := {
 }
 const TREATS_PER_CLEAR := 20
 
-const COLLAR_KIND := "dulce_collar"
-const HAT_KIND := "dulce_hat"
-const BANDANA_KIND := "dulce_bandana"
-const COLLAR_SLOT := "dulce_collar"
-const HAT_SLOT := "dulce_hat"
-const BANDANA_SLOT := "dulce_bandana"
+const COLLAR_KIND := "dolce_collar"
+const HAT_KIND := "dolce_hat"
+const BANDANA_KIND := "dolce_bandana"
+const COLLAR_SLOT := "dolce_collar"
+const HAT_SLOT := "dolce_hat"
+const BANDANA_SLOT := "dolce_bandana"
 
-const COLLAR_RED := "dulce_collar_red"
-const COLLAR_BLUE := "dulce_collar_blue"
-const COLLAR_SPIKED := "dulce_collar_spiked"
-const COLLAR_GOLD := "dulce_collar_gold"
-const HAT_PARTY := "dulce_hat_party"
-const HAT_FLOWERS := "dulce_hat_flowers"
-const HAT_CHEF := "dulce_hat_chef"
-const HAT_SOMBRERO := "dulce_hat_sombrero"
-const BANDANA_KETCHUP := "dulce_bandana_ketchup"
-const BANDANA_MUSTARD := "dulce_bandana_mustard"
-const CAPE_HERO := "dulce_cape_hero"
+const COLLAR_RED := "dolce_collar_red"
+const COLLAR_BLUE := "dolce_collar_blue"
+const COLLAR_SPIKED := "dolce_collar_spiked"
+const COLLAR_GOLD := "dolce_collar_gold"
+const HAT_PARTY := "dolce_hat_party"
+const HAT_FLOWERS := "dolce_hat_flowers"
+const HAT_CHEF := "dolce_hat_chef"
+const HAT_SOMBRERO := "dolce_hat_sombrero"
+const BANDANA_KETCHUP := "dolce_bandana_ketchup"
+const BANDANA_MUSTARD := "dolce_bandana_mustard"
+const CAPE_HERO := "dolce_cape_hero"
 
 ## A collar is always worn; a hat and a bandana are optional.
 const STORE_SLOTS: Array[Dictionary] = [
@@ -315,21 +315,21 @@ const STORE_ITEMS: Array[Dictionary] = [
 # The gallery (DESIGN §9.3)
 # --------------------------------------------------------------------------
 
-const EXHIBIT_DULCE := "dulce"
-const EXHIBIT_DULCE_FULL := "dulce_full"
+const EXHIBIT_DOLCE := "dolce"
+const EXHIBIT_DOLCE_FULL := "dolce_full"
 const EXHIBIT_FOOD_TRUCK := "food_truck"
 
 ## Everything the run is made of, built by the same code the run uses. Later
 ## biomes' pests open with the distance that reaches their biome.
 const GALLERY_EXHIBITS: Array[Dictionary] = [
 	{
-		"id": EXHIBIT_DULCE, "title": "Dulce", "heading": "Dulce", "badge": "DULCE",
+		"id": EXHIBIT_DOLCE, "title": "Dolce", "heading": "Dolce", "badge": "DOLCE",
 		"color": Color("d6a26b"),
 		"description": "Big upright ears, a short muzzle and a curled tail, in her equipped outfit.",
 		"facts": ["A rig of rigid parts: head, ears, tail, four legs", "0.6 m nose to tail"],
 	},
 	{
-		"id": EXHIBIT_DULCE_FULL, "title": "Dulce, Full", "heading": "Dulce", "badge": "FULL",
+		"id": EXHIBIT_DOLCE_FULL, "title": "Dolce, Full", "heading": "Dolce", "badge": "FULL",
 		"color": Color("f2b33d"),
 		"description": "After a Big Burger: rounder, and good for one free hit.",
 		"facts": ["Full is a shape, never just a colour"],

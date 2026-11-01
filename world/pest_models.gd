@@ -8,9 +8,9 @@ extends RefCounted
 ## robo-vac, the seagull's raised wings and the tall capped bottle. Each faces
 ## +x with its feet at the origin.
 
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const MeshBuilder = preload("res://games/dulces_adventure/world/mesh_builder.gd")
-const Pests = preload("res://games/dulces_adventure/pests.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const MeshBuilder = preload("res://games/dolces_adventure/world/mesh_builder.gd")
+const Pests = preload("res://games/dolces_adventure/pests.gd")
 
 const PIGEON_GREY := Color("8d93a3")
 const PIGEON_NECK := Color("6f8f86")

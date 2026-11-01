@@ -11,10 +11,10 @@ extends RefCounted
 
 signal keycap_requested(text: String)
 
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const Pests = preload("res://games/dulces_adventure/pests.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const Pests = preload("res://games/dolces_adventure/pests.gd")
 
 const STEPS: Array[Dictionary] = [
 	{"time": 0.0, "title": "Run as far as you can",
@@ -117,7 +117,7 @@ func validate_finished(scene: Node) -> bool:
 	var complete := state != null and state.distance_m() >= 90.0 and state.burgers >= 5 \
 		and state.stomps >= 1 and not state.over
 	if not complete:
-		push_error("Dulce tutorial incomplete: %.0f m, %d burgers, %d stomps, over=%s." % [
+		push_error("Dolce tutorial incomplete: %.0f m, %d burgers, %d stomps, over=%s." % [
 			state.distance_m() if state else 0.0, state.burgers if state else 0,
 			state.stomps if state else 0, state.over if state else true,
 		])

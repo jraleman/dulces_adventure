@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://daevhylm0yiat"
-path="res://.godot/imported/tutorial_poster.webp-3904a0790ae00b31a39672a6dba4f2c9.ctex"
+path="res://.godot/imported/tutorial_poster.webp-a9174bc6ea5eee028bee64d830769f37.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://games/dulces_adventure/assets/video/tutorial_poster.webp"
-dest_files=["res://.godot/imported/tutorial_poster.webp-3904a0790ae00b31a39672a6dba4f2c9.ctex"]
+source_file="res://games/dolces_adventure/assets/video/tutorial_poster.webp"
+dest_files=["res://.godot/imported/tutorial_poster.webp-a9174bc6ea5eee028bee64d830769f37.ctex"]
 
 [params]
 

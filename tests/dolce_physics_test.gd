@@ -6,8 +6,8 @@ extends SceneTree
 ## body one fixed step per "frame" and reads the result back. Expected numbers
 ## are quoted from the model's own constants, never retyped.
 
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
 
 const STEP := State.STEP
 const TILE := Grid.TILE
@@ -395,7 +395,7 @@ func _expect(condition: bool, message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("Dulce physics tests passed.")
+		print("Dolce physics tests passed.")
 		quit(0)
 		return
 	for failure in _failures:

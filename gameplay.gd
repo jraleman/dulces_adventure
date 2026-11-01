@@ -1,28 +1,28 @@
 extends GameShell
 
-## Dulce's run, inside the reusable navigation and results shell.
+## Dolce's run, inside the reusable navigation and results shell.
 ##
 ## The shell's countdown and lives pool are off (`uses_shell_round_rules =
 ## false`): the model owns hearts, and a run ends through the shell's normal
 ## `_end_round()` once her last heart is gone and the tumble has played, or
 ## once she reaches a fixed stage's goal. An endless run is a fresh seed of
-## the chunk stream (`--dulce-seed=<n>` after `--` replays one); a stage is
+## the chunk stream (`--dolce-seed=<n>` after `--` replays one); a stage is
 ## the same course every time, timed.
 
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const LevelStream = preload("res://games/dulces_adventure/level_stream.gd")
-const Stages = preload("res://games/dulces_adventure/stages.gd")
-const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
-const WorldView = preload("res://games/dulces_adventure/world_view.gd")
-const RunControls = preload("res://games/dulces_adventure/run_controls.gd")
-const RunHud = preload("res://games/dulces_adventure/run_hud.gd")
-const Records = preload("res://games/dulces_adventure/run_records.gd")
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const DulceAudio = preload("res://games/dulces_adventure/dulce_audio.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const LevelStream = preload("res://games/dolces_adventure/level_stream.gd")
+const Stages = preload("res://games/dolces_adventure/stages.gd")
+const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
+const WorldView = preload("res://games/dolces_adventure/world_view.gd")
+const RunControls = preload("res://games/dolces_adventure/run_controls.gd")
+const RunHud = preload("res://games/dolces_adventure/run_hud.gd")
+const Records = preload("res://games/dolces_adventure/run_records.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const DolceAudio = preload("res://games/dolces_adventure/dolce_audio.gd")
 
 ## Debug flag: replay a seed shown on the results panel.
-const SEED_ARGUMENT := "--dulce-seed="
+const SEED_ARGUMENT := "--dolce-seed="
 const HIT_SHAKE := 7.0
 
 var _state: State
@@ -66,7 +66,7 @@ func _load_round_settings() -> void:
 
 
 func _build_playfield() -> void:
-	_cues = DulceAudio.cues()
+	_cues = DolceAudio.cues()
 	_stream = LevelStream.new(_seed)
 	_state = _stream.start()
 	_view = WorldView.new()
@@ -120,8 +120,8 @@ func _equipped_outfit() -> Array[String]:
 
 
 func _dress() -> void:
-	if _view != null and _view.dulce != null:
-		_view.dulce.set_outfit(_outfit[0], _outfit[1], _outfit[2])
+	if _view != null and _view.dolce != null:
+		_view.dolce.set_outfit(_outfit[0], _outfit[1], _outfit[2])
 
 
 ## The store can be opened from the pause menu, so a new hat shows at once.
@@ -180,7 +180,7 @@ func _update_round(delta: float, _time_left: float) -> void:
 func _on_run_event(event: Dictionary) -> void:
 	_view.react(event)
 	# Sound and caption come from one table, so every captioned event is tested.
-	var cue := DulceAudio.cue_for(event)
+	var cue := DolceAudio.cue_for(event)
 	if _cues.has(cue["cue"]):
 		AudioManager.play_sfx(_cues[cue["cue"]], cue["volume_db"], cue["pitch"])
 	AudioManager.request_caption(cue["caption"])
@@ -467,7 +467,7 @@ func _on_game_setting_changed(key: String, _value: Variant) -> void:
 		_layout_view()
 
 
-## Ear flop, tail wag and squash will park here too once Dulce has a model.
+## Ear flop, tail wag and squash will park here too once Dolce has a model.
 func _set_reduced_motion_enabled(value: bool) -> void:
 	super(value)
 	if _view != null:
@@ -484,7 +484,7 @@ func _set_intense_effects_enabled(value: bool) -> void:
 
 ## The tutorial recorder's caption card covers the bottom of the frame. Like
 ## the touch buttons, it only lifts the view's ground line clear of it, so
-## the clip keeps the full playfield and a readable Dulce.
+## the clip keeps the full playfield and a readable Dolce.
 func _set_capture_inset(bottom: float) -> void:
 	_capture_inset = maxf(bottom, 0.0)
 	_layout_view()

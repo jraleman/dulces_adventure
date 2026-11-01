@@ -3,7 +3,7 @@ extends RefCounted
 ## Seeded assembly of authored chunks into an endless run (DESIGN §5.2).
 ##
 ## Which chunk comes next depends only on the seed and the chunks already
-## placed, never on how Dulce plays, so the same seed always builds the same
+## placed, never on how Dolce plays, so the same seed always builds the same
 ## run and a great run can be replayed. Biomes follow the world: a run that
 ## starts at the Park is 400 m from the front door, so Main Street comes 500 m
 ## later. Difficulty follows the run itself (distance is relative everywhere),
@@ -14,9 +14,9 @@ extends RefCounted
 ## of chunks ahead of her and frees chunks two screens behind the camera, so
 ## the model only ever holds the live tiles.
 
-const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
+const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
 
 ## About three landscape screens ahead of her, two behind the camera.
 const AHEAD_TILES := 54

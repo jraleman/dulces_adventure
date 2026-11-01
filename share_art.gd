@@ -1,6 +1,6 @@
 extends Control
 
-## The share card's portrait: Dulce in her victory sit, in the outfit she ran
+## The share card's portrait: Dolce in her victory sit, in the outfit she ran
 ## in, on a little lawn under the Backyard sky (DESIGN §9.4).
 ##
 ## `ShareManager` hands this the round's payload through `configure()`; the
@@ -8,20 +8,20 @@ extends Control
 ## it, so the art only has to be her. Still on purpose, so a capture never
 ## depends on an animation's phase.
 
-const Studio = preload("res://games/dulces_adventure/world/studio.gd")
-const DulceModel = preload("res://games/dulces_adventure/world/dulce_model.gd")
-const FoodModels = preload("res://games/dulces_adventure/world/food_models.gd")
-const MeshBuilder = preload("res://games/dulces_adventure/world/mesh_builder.gd")
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
+const Studio = preload("res://games/dolces_adventure/world/studio.gd")
+const DolceModel = preload("res://games/dolces_adventure/world/dolce_model.gd")
+const FoodModels = preload("res://games/dolces_adventure/world/food_models.gd")
+const MeshBuilder = preload("res://games/dolces_adventure/world/mesh_builder.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
 
 ## A front three-quarter, a little above her, so the plinth's top reads.
 const LENS := Vector3(1.0, 0.4, 1.4)
 const FIELD_OF_VIEW := 34.0
 
-var model: DulceModel
+var model: DolceModel
 var _set: Dictionary = {}
 var _outfit: Array[String] = [Options.COLLAR_RED, "", ""]
 
@@ -48,7 +48,7 @@ func _ready() -> void:
 	treat.scale = Vector3.ONE * 0.5
 	treat.position = Vector3(0.24, 0.105, -0.2)
 	stage.add_child(treat)
-	model = DulceModel.new()
+	model = DolceModel.new()
 	model.set_victory(true)
 	stage.add_child(model)
 	_pose()

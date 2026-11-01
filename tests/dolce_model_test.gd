@@ -1,18 +1,18 @@
 extends SceneTree
 
-## Dulce's rig and particles, headless (DESIGN §7.2, §9.5).
+## Dolce's rig and particles, headless (DESIGN §7.2, §9.5).
 ##
 ## The rig is plain nodes and meshes, so it can be built and posed without a
 ## window: which pose each run state calls for, her size, reduced motion
 ## holding the decorative pivots still, the Full shape, the blink, the tumble
 ## and the collar. The particle pool's bounds are checked here too.
 
-const DulceModel = preload("res://games/dulces_adventure/world/dulce_model.gd")
-const PawParticles = preload("res://games/dulces_adventure/world/paw_particles.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
+const DolceModel = preload("res://games/dolces_adventure/world/dolce_model.gd")
+const PawParticles = preload("res://games/dolces_adventure/world/paw_particles.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
 
 const FLOOR := Vector2(100.0, 160.0)
 
@@ -44,8 +44,8 @@ func _state(velocity := Vector2.ZERO, grounded := true) -> State:
 	return state
 
 
-func _model() -> DulceModel:
-	var model := DulceModel.new()
+func _model() -> DolceModel:
+	var model := DolceModel.new()
 	get_root().add_child(model)
 	return model
 
@@ -59,25 +59,25 @@ func _test_parts() -> void:
 		_expect(model.get_node_or_null(path) != null, "The rig has a %s pivot." % path)
 	var drawn := model.find_children("*", "MeshInstance3D", true, false).filter(
 		func(node: MeshInstance3D) -> bool: return node.mesh != null)
-	_expect(drawn.size() <= 12, "Dulce draws in a dozen calls or fewer (%d)." % drawn.size())
+	_expect(drawn.size() <= 12, "Dolce draws in a dozen calls or fewer (%d)." % drawn.size())
 	model.free()
 
 
 func _test_pose_for() -> void:
 	var cases := [
-		[_state(), DulceModel.IDLE],
-		[_state(Vector2(State.WALK_SPEED, 0)), DulceModel.TROT],
-		[_state(Vector2(State.RUN_SPEED, 0)), DulceModel.SPRINT],
-		[_state(Vector2(0, -600), false), DulceModel.JUMP],
-		[_state(Vector2(0, 40), false), DulceModel.APEX],
-		[_state(Vector2(0, 600), false), DulceModel.FALL],
+		[_state(), DolceModel.IDLE],
+		[_state(Vector2(State.WALK_SPEED, 0)), DolceModel.TROT],
+		[_state(Vector2(State.RUN_SPEED, 0)), DolceModel.SPRINT],
+		[_state(Vector2(0, -600), false), DolceModel.JUMP],
+		[_state(Vector2(0, 40), false), DolceModel.APEX],
+		[_state(Vector2(0, 600), false), DolceModel.FALL],
 	]
 	for case: Array in cases:
-		_expect(DulceModel.pose_for(case[0]) == case[1], "pose_for gives %s." % case[1])
+		_expect(DolceModel.pose_for(case[0]) == case[1], "pose_for gives %s." % case[1])
 	var over := _state()
 	over.over = true
-	_expect(DulceModel.pose_for(over) == DulceModel.TUMBLE, "A finished run tumbles.")
-	_expect(DulceModel.pose_for(over, true) == DulceModel.SIT, "Victory sits, whatever else.")
+	_expect(DolceModel.pose_for(over) == DolceModel.TUMBLE, "A finished run tumbles.")
+	_expect(DolceModel.pose_for(over, true) == DolceModel.SIT, "Victory sits, whatever else.")
 
 
 ## DESIGN §2: about 0.6 m long and 0.45 m tall to the ear tips.
@@ -154,7 +154,7 @@ func _test_full_shape() -> void:
 func _test_blink_and_tumble() -> void:
 	var model := _model()
 	var state := _state()
-	state.invulnerable_left = 1.5 - 1.0 / (2.0 * DulceModel.BLINK_HZ)
+	state.invulnerable_left = 1.5 - 1.0 / (2.0 * DolceModel.BLINK_HZ)
 	model.present(state, 0.0, false)
 	var finish := (model.get_node("Rig/Torso/TorsoMesh") as MeshInstance3D).material_override \
 		as StandardMaterial3D
@@ -257,7 +257,7 @@ func _expect(condition: bool, message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("Dulce model tests passed.")
+		print("Dolce model tests passed.")
 		quit(0)
 		return
 	for failure in _failures:

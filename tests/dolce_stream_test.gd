@@ -6,11 +6,11 @@ extends SceneTree
 ## whole generated kilometre walked end to end by the validator; and a live
 ## window that frees what is behind without changing what is ahead.
 
-const LevelStream = preload("res://games/dulces_adventure/level_stream.gd")
-const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
+const LevelStream = preload("res://games/dolces_adventure/level_stream.gd")
+const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
 
 const RUN_METRES := 1000.0
 const SEEDS: Array[int] = [0, 1, 7, 42, 2024, 99999, 123456, 987654]
@@ -219,7 +219,7 @@ func _expect(condition: bool, message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("Dulce stream tests passed.")
+		print("Dolce stream tests passed.")
 		quit(0)
 		return
 	for failure in _failures:

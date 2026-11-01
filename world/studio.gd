@@ -1,7 +1,7 @@
 extends RefCounted
 
 ## A small lit set for portraits: the store card, the setup plinth, the gallery
-## turntable and the share card all stand Dulce, or an exhibit, in one.
+## turntable and the share card all stand Dolce, or an exhibit, in one.
 ##
 ## Adapted from Cube Trials' store preview: a `SubViewport` under the card, the
 ## run's own daylight (so a colour is judged in the light it is worn in), and
@@ -9,8 +9,8 @@ extends RefCounted
 ## at whatever size the card is. Measured rather than dialled in, because a
 ## hat or a cape changes the bounds.
 
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const Daylight = preload("res://games/dulces_adventure/world/daylight.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const Daylight = preload("res://games/dolces_adventure/world/daylight.gd")
 
 
 ## Builds the set inside `host`: `{viewport, stage, camera, daylight}`. A clear

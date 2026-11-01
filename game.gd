@@ -1,25 +1,25 @@
 extends RefCounted
 
-## Dulce's Adventure registers itself through game-owned data, not framework
+## Dolce's Adventure registers itself through game-owned data, not framework
 ## conditionals.
 
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const ROOT := "res://games/dulces_adventure/"
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const ROOT := "res://games/dolces_adventure/"
 
 
 ## The shell supplies pause, settings, achievements, results and score sharing.
 static func manifest() -> GameManifest:
 	var game := GameManifest.new()
 	game.id = Options.GAME_ID
-	game.title = "Dulce's Adventure"
+	game.title = "Dolce's Adventure"
 	game.tagline = "Small dog. Big appetite. Long way to lunch."
 	game.menu_order = 9
 	game.gameplay_scene_path = ROOT + "gameplay.tscn"
 	game.intro_scene_path = ROOT + "intro.tscn"
 	game.control_style = GameManifest.CONTROL_STYLE_CUSTOM_KEYS
-	# A run ends when Dulce loses her last heart, not on the shell's clock.
+	# A run ends when Dolce loses her last heart, not on the shell's clock.
 	game.uses_shell_round_rules = false
 	# Solo in v1; hot-seat turns are a v2 item (DESIGN §12).
 	game.supports_multiplayer = false
@@ -47,7 +47,7 @@ static func manifest() -> GameManifest:
 	game.gallery_stage_scene_path = ROOT + "gallery_stage.tscn"
 	game.stats_url = "https://deskcansaw.com"
 	game.copy = {
-		"mode_select_intro": "The food festival is at the far end of town. Choose where Dulce sets off.",
+		"mode_select_intro": "The food festival is at the far end of town. Choose where Dolce sets off.",
 		"single_player_description": (
 			"Run as far as you can. Jump the pits, bonk the pests and eat every burger."
 		),
@@ -61,13 +61,13 @@ static func manifest() -> GameManifest:
 		"instructions_solo_summary": "Run right, jump the pits, bonk the pests and eat every burger.",
 		"instructions_headline": "SMALL DOG. BIG APPETITE.",
 		"instructions_rules": (
-			"Dulce smells something wonderful drifting over the fence: the neighbourhood "
+			"Dolce smells something wonderful drifting over the fence: the neighbourhood "
 			+ "food festival has opened at the far end of town. Between her and it are holes, "
 			+ "puddles, pigeons and one very rude vacuum robot.\n"
 			+ "Run right as far as you can. Hold Jump for a high jump or tap it for a hop, "
 			+ "and hold Run for longer, higher jumps. Land on a pest from above to bonk it; "
 			+ "gnomes have pointed hats, so jump over those.\n"
-			+ "Dulce has three hearts. Touching a pest from the side or falling into a pit "
+			+ "Dolce has three hearts. Touching a pest from the side or falling into a pit "
 			+ "costs one, and a fall sends her back to the last safe ground. A Big Burger "
 			+ "makes her Full: the next hit costs Full instead of a heart. Every hundredth "
 			+ "burger, and a rare Golden Bone, gives a heart back.\n"
@@ -78,7 +78,7 @@ static func manifest() -> GameManifest:
 			+ "as she goes, through the Park, Main Street, the Pier and the Night Market. "
 			+ "Stages are fixed and timed: the clock stops at the food truck."
 		) % State.DISTANCE_POINTS,
-		"instructions_demo_prompt": "GO, DULCE!",
+		"instructions_demo_prompt": "GO, DOLCE!",
 		"instructions_player_one_controls": (
 			"A and D, or the arrow keys, move; Space or the up arrow jumps (hold it for a "
 			+ "higher jump); hold Shift to run. On a gamepad: the stick or D-pad moves, "
@@ -92,7 +92,7 @@ static func manifest() -> GameManifest:
 			+ "here changes how she runs."
 		),
 		"gallery_intro": (
-			"Dulce, her pests and her food, up close. Run further to meet the pests of "
+			"Dolce, her pests and her food, up close. Run further to meet the pests of "
 			+ "later neighbourhoods."
 		),
 	}
@@ -157,12 +157,12 @@ static func manifest() -> GameManifest:
 	theme.style_share_card = true
 	game.theme = theme
 	game.credits = [
-		{"heading": "Dulce's Adventure", "lines": [
+		{"heading": "Dolce's Adventure", "lines": [
 			"Game design and development: DeskCanSaw Games",
 			"An endless run and five timed stages through one hungry dog's neighbourhood.",
 		]},
 		{"heading": "Art and sound", "lines": [
-			"Original procedural models: Dulce, her pests, her food and every biome.",
+			"Original procedural models: Dolce, her pests, her food and every biome.",
 			"Original synthesized yips, boings, munches and fanfares.",
 			"Shared DeskCanSaw framework, menus and accessibility.",
 		]},

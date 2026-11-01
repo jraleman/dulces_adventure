@@ -3,13 +3,13 @@ extends SceneTree
 ## Best-run persistence checks for `run_records.gd` (DESIGN §4.5).
 ##
 ## Every case writes to a scratch file of its own under `user://`, never the
-## player's `dulces_adventure.cfg`, and deletes it at the end.
+## player's `dolces_adventure.cfg`, and deletes it at the end.
 
-const Records = preload("res://games/dulces_adventure/run_records.gd")
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
+const Records = preload("res://games/dolces_adventure/run_records.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
 
 var _failures := PackedStringArray()
-var _path := "user://dulces_adventure_records_test_%d.cfg" % Time.get_ticks_usec()
+var _path := "user://dolces_adventure_records_test_%d.cfg" % Time.get_ticks_usec()
 
 
 func _init() -> void:
@@ -27,7 +27,7 @@ func _run() -> void:
 
 
 func _test_manifest_declares_the_file() -> void:
-	var manifest := (load("res://games/dulces_adventure/game.gd") as GDScript).call(
+	var manifest := (load("res://games/dolces_adventure/game.gd") as GDScript).call(
 		"manifest") as GameManifest
 	var paths := manifest.save_files.map(func(entry: Dictionary) -> String: return entry["path"])
 	_expect(Options.SAVE_PATH in paths, "The Saves screen must know about the best-runs file.")
@@ -88,7 +88,7 @@ func _expect(condition: bool, message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("Dulce records tests passed.")
+		print("Dolce records tests passed.")
 		quit(0)
 		return
 	for failure in _failures:

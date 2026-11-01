@@ -3,32 +3,32 @@ extends Control
 ## An isolated Compatibility 3D viewport that draws the run under the 2D shell.
 ##
 ## Read-only: it presents `run_state.gd` (its tiles, food, Lunchboxes, pests
-## and Dulce) dressed in each chunk's biome, with a parallax backdrop and the
+## and Dolce) dressed in each chunk's biome, with a parallax backdrop and the
 ## biome's sky, and reports where the camera's left edge is, so the model can
 ## stop her walking past it. The camera only ever scrolls forward (DESIGN §4.7).
 
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
-const MeshBuilder = preload("res://games/dulces_adventure/world/mesh_builder.gd")
-const Daylight = preload("res://games/dulces_adventure/world/daylight.gd")
-const DulceModel = preload("res://games/dulces_adventure/world/dulce_model.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Pests = preload("res://games/dulces_adventure/pests.gd")
-const FoodModels = preload("res://games/dulces_adventure/world/food_models.gd")
-const PestModels = preload("res://games/dulces_adventure/world/pest_models.gd")
-const PawParticles = preload("res://games/dulces_adventure/world/paw_particles.gd")
-const BiomeProps = preload("res://games/dulces_adventure/world/biome_props.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
+const MeshBuilder = preload("res://games/dolces_adventure/world/mesh_builder.gd")
+const Daylight = preload("res://games/dolces_adventure/world/daylight.gd")
+const DolceModel = preload("res://games/dolces_adventure/world/dolce_model.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Pests = preload("res://games/dolces_adventure/pests.gd")
+const FoodModels = preload("res://games/dolces_adventure/world/food_models.gd")
+const PestModels = preload("res://games/dolces_adventure/world/pest_models.gd")
+const PawParticles = preload("res://games/dolces_adventure/world/paw_particles.gd")
+const BiomeProps = preload("res://games/dolces_adventure/world/biome_props.gd")
 
 ## How much of the run fits on screen, in tiles, before the aspect decides.
 const VISIBLE_TILES_WIDE := 18.0
-## Narrow enough that Dulce reads on a phone, wide enough for a five-tile pit
+## Narrow enough that Dolce reads on a phone, wide enough for a five-tile pit
 ## and its landing to fit ahead of her.
 const VISIBLE_TILES_WIDE_PORTRAIT := 9.0
 const VISIBLE_TILES_HIGH := 10.0
 ## How far the soil runs below the deepest row, past any frame's bottom edge.
 const BEDROCK_TILES := 24.0
-## Dulce sits left of centre, so more of what is coming is on screen.
+## Dolce sits left of centre, so more of what is coming is on screen.
 const LOOK_AHEAD := 0.14
 ## The seam row's surface rests this far down the screen while she runs.
 const GROUND_LINE := 0.72
@@ -64,7 +64,7 @@ var camera := Vector2.ZERO
 var world_viewport: SubViewport
 var world_camera: Camera3D
 var world: Node3D
-var dulce: DulceModel
+var dolce: DolceModel
 var particles: PawParticles
 var daylight: Daylight
 ## One baked chunk (terrain, props and glow) per live chunk, by its first
@@ -136,8 +136,8 @@ func _ready() -> void:
 			tile.add_child(part)
 		_backdrop.add_child(tile)
 		_backdrop_tiles.append(tile)
-	dulce = DulceModel.new()
-	world.add_child(dulce)
+	dolce = DolceModel.new()
+	world.add_child(dolce)
 	particles = PawParticles.new()
 	particles.reduced_motion = reduced_motion
 	world.add_child(particles)
@@ -323,7 +323,7 @@ static func terrain_mesh(
 	return mesh.finish()
 
 
-## The camera's left edge in simulation units; the model clamps Dulce to it.
+## The camera's left edge in simulation units; the model clamps Dolce to it.
 ## Before the first framed picture there is no edge yet.
 func left_edge() -> float:
 	return _left if _camera_ready else -INF
@@ -333,7 +333,7 @@ func present(delta: float) -> void:
 	if state == null or world == null:
 		return
 	var moving_delta := 0.0 if get_tree().paused else delta
-	dulce.present(state, moving_delta, reduced_motion)
+	dolce.present(state, moving_delta, reduced_motion)
 	_present_footsteps(moving_delta)
 	particles.advance(moving_delta)
 	_present_items()
@@ -347,30 +347,30 @@ func present(delta: float) -> void:
 	daylight.set_elapsed(light_time)
 
 
-## Shows one run event: Dulce's reaction and its puff of dust, crumbs or
+## Shows one run event: Dolce's reaction and its puff of dust, crumbs or
 ## feathers. Read-only, like everything else here.
 func react(event: Dictionary) -> void:
-	if dulce == null or state == null:
+	if dolce == null or state == null:
 		return
 	var feet := Art.world_point(state.position)
 	match str(event.get("kind", "")):
 		"jump":
 			particles.burst(feet, 3, DUST, 0.1, 0.35, 0.2, 0.35)
 		"land":
-			dulce.react("land")
+			dolce.react("land")
 			var impact := clampf(float(event.get("speed", 0.0)) / 1200.0, 0.3, 1.0)
 			particles.burst(feet, roundi(4 + 4 * impact), DUST, 0.12 * impact + 0.05,
 				0.7 * impact, 0.35, 0.45)
 		"stomp":
-			dulce.react("stomp")
+			dolce.react("stomp")
 			particles.burst(feet + Vector3(0, -0.1, 0), 8, FEATHERS, 0.1, 0.9, 0.8, 0.5)
 		"eat":
-			dulce.react("eat")
+			dolce.react("eat")
 			var cell: Vector2i = event.get("cell", Vector2i.ZERO)
 			var at := Art.world_point((Vector2(cell) + Vector2(0.5, 0.5)) * Grid.TILE)
 			particles.burst(at, 5, FoodModels.BUN, 0.06, 0.5, 0.5, 0.35)
 		"hurt", "shrink":
-			dulce.react("hurt")
+			dolce.react("hurt")
 
 
 func set_reduced_motion(value: bool) -> void:

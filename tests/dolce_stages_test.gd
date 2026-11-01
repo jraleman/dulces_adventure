@@ -8,17 +8,17 @@ extends SceneTree
 ## scripted clear stops the clock and ends the run; and stage records only
 ## ever improve.
 
-const Stages = preload("res://games/dulces_adventure/stages.gd")
-const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
-const LevelStream = preload("res://games/dulces_adventure/level_stream.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
-const Records = preload("res://games/dulces_adventure/run_records.gd")
-const DulceModel = preload("res://games/dulces_adventure/world/dulce_model.gd")
+const Stages = preload("res://games/dolces_adventure/stages.gd")
+const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
+const LevelStream = preload("res://games/dolces_adventure/level_stream.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
+const Records = preload("res://games/dolces_adventure/run_records.gd")
+const DolceModel = preload("res://games/dolces_adventure/world/dolce_model.gd")
 
 var _failures := PackedStringArray()
-var _path := "user://dulces_adventure_stages_test_%d.cfg" % Time.get_ticks_usec()
+var _path := "user://dolces_adventure_stages_test_%d.cfg" % Time.get_ticks_usec()
 
 
 func _init() -> void:
@@ -81,9 +81,9 @@ func _test_unlock_chain() -> void:
 		_expect(str(level.get("requires_achievement", "")) == previous_clear,
 			"%s opens with %s." % [stage["id"], previous_clear if previous_clear else "nothing"])
 		previous_clear = str(stage["clear_achievement"])
-		_expect(previous_clear.begins_with("dulces_adventure_cleared_"),
+		_expect(previous_clear.begins_with("dolces_adventure_cleared_"),
 			"Clear keys are permanent and prefixed (%s)." % previous_clear)
-	var manifest := (load("res://games/dulces_adventure/game.gd") as GDScript).call(
+	var manifest := (load("res://games/dolces_adventure/game.gd") as GDScript).call(
 		"manifest") as GameManifest
 	for stage in Stages.STAGES:
 		_expect(manifest.achievements.has(stage["clear_achievement"]),
@@ -139,12 +139,12 @@ func _test_scripted_clear() -> void:
 	var x := state.position.x
 	state.advance(State.CLEAR_SECONDS * 0.5, 1.0, false, false)
 	_expect(state.clear_time == stopped and state.position.x == x,
-		"After the goal the clock and Dulce both stop.")
+		"After the goal the clock and Dolce both stop.")
 	_expect(not state.run_finished(), "She celebrates before the results.")
 	state.advance(State.CLEAR_SECONDS, 0.0, false, false)
 	_expect(state.run_finished() and state.hearts == State.STARTING_HEARTS,
 		"Then the run is finished, every heart intact.")
-	_expect(DulceModel.pose_for(state) == DulceModel.SIT, "She sits for her treat.")
+	_expect(DolceModel.pose_for(state) == DolceModel.SIT, "She sits for her treat.")
 
 
 func _test_records() -> void:
@@ -175,7 +175,7 @@ func _expect(condition: bool, message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("Dulce stage tests passed.")
+		print("Dolce stage tests passed.")
 		quit(0)
 		return
 	for failure in _failures:

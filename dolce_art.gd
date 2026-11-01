@@ -11,7 +11,7 @@ const CREAM := Color("fff1d6")
 const MUSTARD := Color("f2b33d")
 const KETCHUP := Color("d9533b")
 const LETTUCE := Color("6fae4f")
-## Dulce's coat and markings: the assumed look (DESIGN §7.2), all in one place
+## Dolce's coat and markings: the assumed look (DESIGN §7.2), all in one place
 ## so reference photos mean a recolour here, not a new rig.
 const FAWN := Color("d6a26b")
 const FAWN_DARK := Color("b9834f")

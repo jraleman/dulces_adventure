@@ -138,7 +138,7 @@ func torus(
 	_append(primitive, Transform3D(Basis.from_euler(rotation), at), color)
 
 
-## Small, fully three-dimensional rounded forms: Dulce's placeholder, bushes, buns.
+## Small, fully three-dimensional rounded forms: Dolce's placeholder, bushes, buns.
 func ellipsoid(at: Vector3, dimensions: Vector3, color: Color, segments := 12) -> void:
 	var primitive := SphereMesh.new()
 	primitive.radius = 0.5

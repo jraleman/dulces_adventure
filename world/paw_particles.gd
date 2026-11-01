@@ -6,7 +6,7 @@ extends MultiMeshInstance3D
 ## the oldest slots, nothing is allocated per frame, and nothing casts a
 ## shadow. All of it is decoration, so reduced motion emits none.
 
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
 
 const POOL := 64
 const GRAVITY := 2.2

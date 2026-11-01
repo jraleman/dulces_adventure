@@ -1,16 +1,16 @@
 extends SceneTree
 
-## Smoke checks for Dulce's Adventure's manifest and constants-only options.
+## Smoke checks for Dolce's Adventure's manifest and constants-only options.
 ##
 ## The manifest and options are loaded by path, as `GameCatalog` loads them, so
 ## this suite proves they compile before the autoloads exist. The catalog is
 ## then asked for the same id, which is what every framework sweep relies on.
 
-const GAME_PATH := "res://games/dulces_adventure/game.gd"
-const OPTIONS_PATH := "res://games/dulces_adventure/dulces_adventure_options.gd"
+const GAME_PATH := "res://games/dolces_adventure/game.gd"
+const OPTIONS_PATH := "res://games/dolces_adventure/dolces_adventure_options.gd"
 ## Prefix every action and key with the game id (DESIGN §8), so two games can
 ## share a key without sharing a saved binding.
-const PREFIX := "dulces_adventure_"
+const PREFIX := "dolces_adventure_"
 
 var _failures := PackedStringArray()
 
@@ -43,13 +43,18 @@ func _run() -> void:
 
 
 func _test_identity(manifest: GameManifest, constants: Dictionary) -> void:
-	_expect(manifest.id == "dulces_adventure", "The id is permanent: 'dulces_adventure'.")
+	_expect(manifest.id == "dolces_adventure", "The id is permanent: 'dolces_adventure'.")
 	_expect(manifest.id == str(constants.get("GAME_ID", "")),
 		"The manifest must take its id from the options file.")
-	_expect(manifest.title == "Dulce's Adventure", "The title must be 'Dulce's Adventure'.")
-	_expect(manifest.menu_order == 9, "Dulce's Adventure sits after Cube Trials, at 9.")
-	_expect(ResourceLoader.exists(manifest.gameplay_scene_path),
-		"The gameplay scene must exist: %s" % manifest.gameplay_scene_path)
+	_expect(manifest.title == "Dolce's Adventure", "The title must be 'Dolce's Adventure'.")
+	_expect(manifest.menu_order == 9, "Dolce's Adventure sits after Cube Trials, at 9.")
+	for path: String in [
+		manifest.gameplay_scene_path, manifest.intro_scene_path,
+		manifest.character_preview_scene_path, manifest.store_preview_scene_path,
+		manifest.gallery_stage_scene_path, manifest.share_art_scene_path,
+	]:
+		_expect(ResourceLoader.load(path) is PackedScene,
+			"The renamed scene and its dependencies must load: %s" % path)
 	_expect(manifest.stats_url.to_utf8_buffer().size() <= 42,
 		"The stats URL must stay within 42 UTF-8 bytes or the QR stops scanning.")
 
@@ -57,7 +62,7 @@ func _test_identity(manifest: GameManifest, constants: Dictionary) -> void:
 ## The run ends by its own rules, and v1 is solo (owner decision, TODO.md).
 func _test_rules(manifest: GameManifest) -> void:
 	_expect(manifest.control_style == GameManifest.CONTROL_STYLE_CUSTOM_KEYS,
-		"Dulce's Adventure declares its own keys.")
+		"Dolce's Adventure declares its own keys.")
 	_expect(not manifest.uses_shell_round_rules,
 		"A run ends on the last heart, not on the shell's countdown or lives pool.")
 	_expect(not manifest.supports_multiplayer, "Hot seat is a v2 item; v1 is solo.")
@@ -102,7 +107,7 @@ func _test_bindings(manifest: GameManifest, constants: Dictionary) -> void:
 
 func _test_catalog(manifest: GameManifest) -> void:
 	var listed := GameCatalog.get_manifest(manifest.id)
-	_expect(listed != null, "GameCatalog must discover games/dulces_adventure/game.gd.")
+	_expect(listed != null, "GameCatalog must discover games/dolces_adventure/game.gd.")
 	if listed != null:
 		_expect(listed.title == manifest.title, "The catalog must hold this manifest.")
 
@@ -153,7 +158,7 @@ func _expect(condition: bool, message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("Dulce's Adventure manifest tests passed.")
+		print("Dolce's Adventure manifest tests passed.")
 		quit(0)
 		return
 	for failure in _failures:

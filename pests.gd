@@ -9,7 +9,7 @@ extends RefCounted
 ## upright hot-sauce bottle. Sauce drops are pests too, so they share the
 ## collision path, but they cannot be stomped.
 
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
 
 const PIGEON := "pigeon"
 const GNOME := "gnome"
@@ -43,7 +43,7 @@ const PROFILES := {
 	SAUCE_DROP: {"title": "Sauce drop", "size": Vector2(10.0, 10.0), "speed": 0.0,
 		"stompable": false, "exit": SPLAT, "projectile": true},
 }
-## Pests wait until Dulce is this close, so a chunk plays as it was authored
+## Pests wait until Dolce is this close, so a chunk plays as it was authored
 ## instead of its pigeons wandering off before they are on screen.
 const ACTIVE_RANGE := 16.0 * Grid.TILE
 const GRAVITY := 2600.0
@@ -95,7 +95,7 @@ static func flies(kind: String) -> bool:
 	return bool(PROFILES.get(kind, {}).get("flies", false))
 
 
-## Spawns a pest at `feet`, its bottom centre, facing Dulce.
+## Spawns a pest at `feet`, its bottom centre, facing Dolce.
 func add(kind: String, feet: Vector2) -> Dictionary:
 	var pest := {
 		"id": _next_id, "kind": kind, "position": feet, "home": feet,
@@ -118,7 +118,7 @@ static func stompable(pest: Dictionary) -> bool:
 	return bool(PROFILES[pest["kind"]]["stompable"])
 
 
-## Pests Dulce can count: projectiles are not pests to stomp or to tally.
+## Pests Dolce can count: projectiles are not pests to stomp or to tally.
 func alive_count() -> int:
 	return list.filter(func(pest: Dictionary) -> bool:
 		return pest["alive"] and not PROFILES[pest["kind"]].get("projectile", false)).size()
@@ -150,7 +150,7 @@ func stomp(pest: Dictionary) -> bool:
 	return true
 
 
-## Sends a flipped robo-vac sliding away from Dulce, along `direction`.
+## Sends a flipped robo-vac sliding away from Dolce, along `direction`.
 func kick(pest: Dictionary, direction: int) -> void:
 	pest["state"] = "sliding"
 	pest["facing"] = 1 if direction >= 0 else -1
@@ -161,26 +161,26 @@ func is_harmless(pest: Dictionary) -> bool:
 	return pest["kind"] == ROBO_VAC and (pest["state"] == "flipped" or float(pest["grace"]) > 0.0)
 
 
-func step(grid: Grid, dulce: Vector2, delta: float) -> void:
+func step(grid: Grid, dolce: Vector2, delta: float) -> void:
 	for pest in list.duplicate():
 		if not pest["alive"]:
 			pest["poof"] = maxf(0.0, float(pest["poof"]) - delta)
 			continue
 		if not pest["active"]:
-			pest["active"] = absf(float(pest["position"].x) - dulce.x) <= ACTIVE_RANGE \
+			pest["active"] = absf(float(pest["position"].x) - dolce.x) <= ACTIVE_RANGE \
 				or PROFILES[pest["kind"]].get("projectile", false)
 		if not pest["active"]:
 			continue
 		match str(pest["kind"]):
 			SQUIRREL:
-				_squirrel(pest, grid, dulce)
+				_squirrel(pest, grid, dolce)
 			ROBO_VAC:
 				_vac(pest, delta)
 			SEAGULL:
-				_seagull(pest, grid, dulce, delta)
+				_seagull(pest, grid, dolce, delta)
 				continue
 			HOT_SAUCE:
-				_sauce(pest, dulce, delta)
+				_sauce(pest, dolce, delta)
 			SAUCE_DROP:
 				_drop(pest, grid, delta)
 				continue
@@ -208,13 +208,13 @@ func clear_before(x: float) -> void:
 
 ## Waits facing her, then charges once she is close, hopping small gaps and
 ## stopping at the edge of a wide one.
-func _squirrel(pest: Dictionary, grid: Grid, dulce: Vector2) -> void:
+func _squirrel(pest: Dictionary, grid: Grid, dolce: Vector2) -> void:
 	var feet: Vector2 = pest["position"]
-	var toward := 1 if dulce.x > feet.x else -1
+	var toward := 1 if dolce.x > feet.x else -1
 	if pest["state"] == "walk":
 		pest["facing"] = toward
 		_set_velocity(pest, 0.0, NAN)
-		if absf(dulce.x - feet.x) <= SQUIRREL_SIGHT and absf(dulce.y - feet.y) <= 2.0 * Grid.TILE:
+		if absf(dolce.x - feet.x) <= SQUIRREL_SIGHT and absf(dolce.y - feet.y) <= 2.0 * Grid.TILE:
 			pest["state"] = "charge"
 		return
 	if not pest["grounded"]:
@@ -248,7 +248,7 @@ func _vac(pest: Dictionary, delta: float) -> void:
 
 ## Patrols around home on a gentle bob, swoops when she passes underneath,
 ## then climbs back. Never dives into the ground or far below home.
-func _seagull(pest: Dictionary, grid: Grid, dulce: Vector2, delta: float) -> void:
+func _seagull(pest: Dictionary, grid: Grid, dolce: Vector2, delta: float) -> void:
 	var feet: Vector2 = pest["position"]
 	var home: Vector2 = pest["home"]
 	pest["timer"] = float(pest["timer"]) + delta
@@ -269,33 +269,33 @@ func _seagull(pest: Dictionary, grid: Grid, dulce: Vector2, delta: float) -> voi
 			if absf(feet.x - home.x) > GULL_PATROL:
 				pest["facing"] = 1 if feet.x < home.x else -1
 			feet.y = home.y + sin(float(pest["timer"]) * 3.0) * 6.0
-			if absf(dulce.x - feet.x) < GULL_SWOOP_RANGE and dulce.y > feet.y + Grid.TILE:
-				var lowest := minf(_ground_below(grid, Vector2(dulce.x, feet.y)) - GULL_CLEARANCE,
+			if absf(dolce.x - feet.x) < GULL_SWOOP_RANGE and dolce.y > feet.y + Grid.TILE:
+				var lowest := minf(_ground_below(grid, Vector2(dolce.x, feet.y)) - GULL_CLEARANCE,
 					home.y + GULL_DIVE_LIMIT)
-				pest["target"] = Vector2(dulce.x, minf(dulce.y - 6.0, lowest))
+				pest["target"] = Vector2(dolce.x, minf(dolce.y - 6.0, lowest))
 				pest["state"] = "swoop"
 				pest["timer"] = 0.0
-				pest["facing"] = 1 if dulce.x > feet.x else -1
+				pest["facing"] = 1 if dolce.x > feet.x else -1
 	pest["position"] = feet
 
 
 ## Hops in place on a timer, and spits a slow drop in an arc toward her.
-func _sauce(pest: Dictionary, dulce: Vector2, delta: float) -> void:
+func _sauce(pest: Dictionary, dolce: Vector2, delta: float) -> void:
 	_set_velocity(pest, 0.0, NAN)
 	var feet: Vector2 = pest["position"]
-	pest["facing"] = 1 if dulce.x > feet.x else -1
+	pest["facing"] = 1 if dolce.x > feet.x else -1
 	pest["timer"] = float(pest["timer"]) + delta
 	if pest["grounded"] and float(pest["timer"]) >= SAUCE_HOP_SECONDS:
 		pest["timer"] = 0.0
 		_set_velocity(pest, NAN, -SAUCE_HOP_SPEED)
 		pest["grounded"] = false
 	pest["spit_timer"] = float(pest["spit_timer"]) - delta
-	if float(pest["spit_timer"]) <= 0.0 and absf(dulce.x - feet.x) <= SAUCE_RANGE:
+	if float(pest["spit_timer"]) <= 0.0 and absf(dolce.x - feet.x) <= SAUCE_RANGE:
 		pest["spit_timer"] = SAUCE_SPIT_SECONDS
 		var mouth := feet - Vector2(0.0, PROFILES[HOT_SAUCE]["size"].y + 2.0)
 		var drop := add(SAUCE_DROP, mouth)
 		drop["active"] = true
-		drop["velocity"] = Vector2(clampf((dulce.x - feet.x) * 0.6, -DROP_MAX_SPEED, DROP_MAX_SPEED),
+		drop["velocity"] = Vector2(clampf((dolce.x - feet.x) * 0.6, -DROP_MAX_SPEED, DROP_MAX_SPEED),
 			-DROP_LAUNCH)
 		_events.append({"kind": "spit", "position": mouth})
 

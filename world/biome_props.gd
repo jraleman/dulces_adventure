@@ -5,14 +5,14 @@ extends RefCounted
 ##
 ## Everything is built from primitives into batched, vertex-coloured meshes,
 ## like the rest of the world. Props stand behind the playfield, never in
-## front of Dulce, and are placed by column so the same seed always dresses
+## front of Dolce, and are placed by column so the same seed always dresses
 ## the same run. Lanterns and lit windows go into a separate "glow" mesh that
 ## stays bright at night.
 
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const MeshBuilder = preload("res://games/dulces_adventure/world/mesh_builder.gd")
-const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const MeshBuilder = preload("res://games/dolces_adventure/world/mesh_builder.gd")
+const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
 
 ## Props stand this far behind the playfield, on the back of the ground.
 const PROP_DEPTH := -1.15

@@ -1,6 +1,6 @@
-extends "res://games/dulces_adventure/store_preview.gd"
+extends "res://games/dolces_adventure/store_preview.gd"
 
-## Dulce on the setup screen's plinth, in everything she has equipped.
+## Dolce on the setup screen's plinth, in everything she has equipped.
 ##
 ## The screen hands over the character entry (there is one: her). Her outfit
 ## comes from the store, resolved from the tree rather than named, so this
@@ -14,7 +14,7 @@ var _shown := ""
 
 
 func configure(_character: Dictionary) -> void:
-	if _inert or _dulce == null:
+	if _inert or _dolce == null:
 		return
 	var store := get_node_or_null("/root/Store")
 	var outfit: Array[String] = [Options.COLLAR_RED, "", ""]

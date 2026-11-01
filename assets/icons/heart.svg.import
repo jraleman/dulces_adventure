@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://da2huyf85pei2"
-path="res://.godot/imported/heart.svg-f892f0991e04d700982106d19c2b15d4.ctex"
+path="res://.godot/imported/heart.svg-c932b3c556de90618864bf46257aeae5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://games/dulces_adventure/assets/icons/heart.svg"
-dest_files=["res://.godot/imported/heart.svg-f892f0991e04d700982106d19c2b15d4.ctex"]
+source_file="res://games/dolces_adventure/assets/icons/heart.svg"
+dest_files=["res://.godot/imported/heart.svg-c932b3c556de90618864bf46257aeae5.ctex"]
 
 [params]
 

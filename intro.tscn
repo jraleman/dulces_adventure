@@ -2,8 +2,8 @@
 
 [ext_resource type="PackedScene" path="res://scenes/boot/intro.tscn" id="1_intro"]
 
-[node name="DulcesAdventureIntro" instance=ExtResource("1_intro")]
-cards = Array[String](["Dulce smells something wonderful\ndrifting over the fence.", "The neighbourhood food festival\nhas opened at the far end of town.", "Between her and it: holes, puddles,\npigeons and one very rude vacuum robot.", "She is small. She is fast.\nShe is very hungry. Go, Dulce!"])
+[node name="DolcesAdventureIntro" instance=ExtResource("1_intro")]
+cards = Array[String](["Dolce smells something wonderful\ndrifting over the fence.", "The neighbourhood food festival\nhas opened at the far end of town.", "Between her and it: holes, puddles,\npigeons and one very rude vacuum robot.", "She is small. She is fast.\nShe is very hungry. Go, Dolce!"])
 hold = 2.2
 fade_in = 0.5
 fade_out = 0.4

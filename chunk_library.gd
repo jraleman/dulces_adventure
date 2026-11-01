@@ -9,9 +9,9 @@ extends RefCounted
 ## fair") as code: it quotes `run_state.gd`'s own jump arithmetic, so a change
 ## to the movement constants re-checks every chunk.
 
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Pests = preload("res://games/dulces_adventure/pests.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Pests = preload("res://games/dolces_adventure/pests.gd")
 
 enum Biome { BACKYARD, PARK, STREET, PIER, MARKET }
 
@@ -61,7 +61,7 @@ const LEGEND := {
 	"S": "safe",
 	"F": "goal",
 }
-## Glyphs Dulce can stand on, and the ones she cannot pass through.
+## Glyphs Dolce can stand on, and the ones she cannot pass through.
 const SUPPORTS := ["#", "=", "?", "!"]
 const BLOCKS := ["#", "?", "!"]
 
@@ -70,7 +70,7 @@ static var _reach_by_rise: Dictionary[float, float] = {}
 
 ## Every biome opens with a gate chunk: the "Welcome to" set piece, and where a
 ## run that starts in that biome begins. Gates are never drawn at random.
-## Dulce's front garden is the Backyard's.
+## Dolce's front garden is the Backyard's.
 const START := {
 	"id": "backyard_start", "biome": Biome.BACKYARD, "difficulty": 1, "breather": true,
 	"gate": true,

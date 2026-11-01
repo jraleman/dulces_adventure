@@ -1,16 +1,16 @@
 extends RefCounted
 
 ## The store's cosmetics as meshes, built in the same rounded-primitive style
-## as Dulce (DESIGN §9.2).
+## as Dolce (DESIGN §9.2).
 ##
 ## Every colour comes from the item's own entry in the options file, so the
 ## swatch on a store card and the thing she wears can never disagree. Hats
 ## are built for the head pivot (origin between her ears), collars and
 ## bandanas for the collar socket on her neck.
 
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const MeshBuilder = preload("res://games/dulces_adventure/world/mesh_builder.gd")
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const MeshBuilder = preload("res://games/dolces_adventure/world/mesh_builder.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
 
 ## Where a hat sits on the head pivot, in metres. Neck pieces are built
 ## around the collar socket itself.

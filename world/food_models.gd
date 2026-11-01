@@ -8,10 +8,10 @@ extends RefCounted
 ## burgers at the Night Market. They all count as burgers. A Big Burger is a
 ## bigger stack and the Golden Bone is a bone, so none relies on colour.
 
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const MeshBuilder = preload("res://games/dulces_adventure/world/mesh_builder.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const MeshBuilder = preload("res://games/dolces_adventure/world/mesh_builder.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
 
 const BUN := Color("d99a4e")
 const PATTY := Color("6b3b26")

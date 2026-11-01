@@ -11,11 +11,11 @@ extends Control
 
 signal jump_requested
 
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const LEFT_ICON = preload("res://games/dulces_adventure/assets/icons/left.svg")
-const RIGHT_ICON = preload("res://games/dulces_adventure/assets/icons/right.svg")
-const JUMP_ICON = preload("res://games/dulces_adventure/assets/icons/jump.svg")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const LEFT_ICON = preload("res://games/dolces_adventure/assets/icons/left.svg")
+const RIGHT_ICON = preload("res://games/dolces_adventure/assets/icons/right.svg")
+const JUMP_ICON = preload("res://games/dolces_adventure/assets/icons/jump.svg")
 
 const STICK_DEADZONE := 0.25
 const TRIGGER_THRESHOLD := 0.35
@@ -46,7 +46,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for action: StringName in [Options.LEFT, Options.RIGHT, Options.JUMP]:
 		var button := Button.new()
-		button.name = str(action).trim_prefix("dulces_adventure_").capitalize()
+		button.name = str(action).trim_prefix("dolces_adventure_").capitalize()
 		button.icon = {Options.LEFT: LEFT_ICON, Options.RIGHT: RIGHT_ICON,
 			Options.JUMP: JUMP_ICON}[action]
 		button.expand_icon = true

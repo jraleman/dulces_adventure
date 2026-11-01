@@ -1,4 +1,4 @@
-# Dulce's Adventure — Game Design Document
+# Dolce's Adventure — Game Design Document
 
 > Hand-off document for the implementation session. It fixes the concept, the
 > rules, the architecture and the order of work. Numbers marked *(tune)* are
@@ -7,13 +7,13 @@
 
 | | |
 | --- | --- |
-| Game ID | `dulces_adventure` |
-| Title | Dulce's Adventure |
-| Folder | `godot-base/games/dulces_adventure/` (its own Git repository, intended to become the eighth submodule) |
+| Game ID | `dolces_adventure` |
+| Title | Dolce's Adventure |
+| Folder | `godot-base/games/dolces_adventure/` (its own Git repository, intended to become the eighth submodule) |
 | Control style | `GameManifest.CONTROL_STYLE_CUSTOM_KEYS` |
 | Round rules | Game-owned (`uses_shell_round_rules = false`) |
 | Menu order | `9` (after Cube Trials' `8`) |
-| Feature tag | `dulces_adventure` |
+| Feature tag | `dolces_adventure` |
 | Look-and-feel reference | `games/cube_trials/` |
 | Renderer | `gl_compatibility` — unchanged |
 
@@ -21,7 +21,7 @@
 
 ## 1. Concept
 
-**Dulce** is a small, cheerful chihuahua mix who loves to run, jump and eat —
+**Dolce** is a small, cheerful chihuahua mix who loves to run, jump and eat —
 burgers above all. Every run she sets off from her front door and goes **as far
 as she can**, hopping over pits, bouncing on pests and snapping up food on the
 way. The run ends when she loses her last heart; the score is **distance**,
@@ -41,7 +41,7 @@ flagpole.
    enemy is readable before it is dangerous. Generated terrain is assembled
    from hand-authored chunks validated by tests, never from free noise.
 3. **Cute, never cruel.** Enemies are pests that get *bonked* and scurry off
-   or poof into a puff — no gore, no death animation for Dulce beyond a
+   or poof into a puff — no gore, no death animation for Dolce beyond a
    flustered tumble.
 4. **Same studio look as Cube Trials.** A real 3D world and character in an
    isolated viewport, driven by a node-free 2D model, under the shared HUD and
@@ -53,10 +53,10 @@ flagpole.
 
 Four short cards, the same shape as Cube Trials' boot intro:
 
-1. Dulce smells something wonderful drifting over the fence.
+1. Dolce smells something wonderful drifting over the fence.
 2. The neighbourhood food festival has opened at the far end of town.
 3. Between her and it: holes, puddles, pigeons and one very rude vacuum robot.
-4. She is small. She is fast. She is *very* hungry. — **Go, Dulce!**
+4. She is small. She is fast. She is *very* hungry. — **Go, Dolce!**
 
 The festival is never "reached": the farther she gets, the closer the smell.
 Biomes (§5.3) are the sense of progress.
@@ -69,26 +69,26 @@ Cube Trials is the reference. Copy its *structure*; do not import its files
 (no game-to-game dependency — copy and adapt helpers like `mesh_builder.gd`
 into this folder).
 
-| Cube Trials | Dulce's Adventure |
+| Cube Trials | Dolce's Adventure |
 | --- | --- |
 | `trial_state.gd` — node-free 120 Hz chassis model | `run_state.gd` — node-free 120 Hz platformer body and run rules |
 | `course.gd` — handcrafted routes, pickups, checkpoints | `chunk_library.gd` + `level_stream.gd` — authored chunks, seeded assembly, safe-ground points |
 | `course_view.gd` — isolated `SubViewport`, orthographic Side camera | `world_view.gd` — same isolated `SubViewport`, orthographic side camera, optional "Chase" later |
-| `world/cube_model.gd` — imported GLB car, damage stages, decorative poses | `world/dulce_model.gd` — procedural rig of rigid parts (like Chicken Pit's `chicken_rig.gd`), run/jump/land/eat poses, decorative ear and tail motion |
+| `world/cube_model.gd` — imported GLB car, damage stages, decorative poses | `world/dolce_model.gd` — procedural rig of rigid parts (like Chicken Pit's `chicken_rig.gd`), run/jump/land/eat poses, decorative ear and tail motion |
 | `world/mesh_builder.gd` — vertex-colour batching | Same idea, copied into `world/mesh_builder.gd` |
 | `world/daylight.gd` — sun/sky rig, optional day/night | Same rig; biome palettes; optional day/night toggle |
 | `world/tire_particles.gd` — bounded dust | `world/paw_particles.gd` — footstep dust, landing puff, crumbs on eating |
 | `drive_controls.gd` — keyboard, gamepad, multitouch | `run_controls.gd` — same three sources, fewer buttons |
 | `trial_hud.gd` — compact in-view icon HUD | `run_hud.gd` — heart / distance / burger / score icons |
-| `cube_audio.gd` — synthesized cues | `dulce_audio.gd` — synthesized yips, boings, munches |
-| `cube_art.gd` — palette, `WORLD_SCALE`, `world_point()` | `dulce_art.gd` — same API shape |
+| `cube_audio.gd` — synthesized cues | `dolce_audio.gd` — synthesized yips, boings, munches |
+| `cube_art.gd` — palette, `WORLD_SCALE`, `world_point()` | `dolce_art.gd` — same API shape |
 | Spark plugs | Burgers |
 | Sparks (store currency) | Treats |
 | Garage reveal | Biome gate ("Welcome to the Park!") banner and food-truck set piece |
 
 **Scale.** Keep Cube Trials' convention: simulation units in a y-down 2D plane,
 `WORLD_SCALE = 0.025` (40 units = 1 m), `world_point(point, depth)` maps to 3D.
-**One tile = 40 units = 1 m.** Dulce's body is about 0.6 m long, 0.45 m tall
+**One tile = 40 units = 1 m.** Dolce's body is about 0.6 m long, 0.45 m tall
 including ears — deliberately chunky and readable at phone size.
 
 ---
@@ -131,7 +131,7 @@ live at the top of the file so tests and the tuning tunables can quote them.
 | `COYOTE_SECONDS` | 0.09 | Jump just after leaving a ledge |
 | `JUMP_BUFFER_SECONDS` | 0.12 | Jump pressed just before landing |
 | `STOMP_BOUNCE_SPEED` | 620 u/s (980 if Jump held) | Hold to bounce high off a pest |
-| `INVULNERABLE_SECONDS` | 1.5 | After any hit; Dulce blinks via opacity, not flashing colour |
+| `INVULNERABLE_SECONDS` | 1.5 | After any hit; Dolce blinks via opacity, not flashing colour |
 
 The body is an axis-aligned box (hit box slightly smaller than the visual)
 colliding against a tile grid plus one-way platforms. No slopes in v1 —
@@ -145,7 +145,7 @@ refuses double jumps.
 
 Mario's big/small rule, reworded around food:
 
-- Dulce starts each run with **3 hearts** (`STARTING_HEARTS`).
+- Dolce starts each run with **3 hearts** (`STARTING_HEARTS`).
 - A **Big Burger** (rare, from a `?`-style *Lunchbox* block) makes her **Full**:
   slightly rounder model, a little bounce in her trot.
 - Hit while Full → she becomes Normal, keeps the heart, gets i-frames.
@@ -168,9 +168,9 @@ silhouette, not its colour.
 | --- | --- | --- | --- |
 | **Grumpy Pigeon** | Waddles back and forth on a platform, turns at edges | Poof of feathers | Backyard |
 | **Garden Gnome** | Stands still, blocks a path; can't be stomped (pointy hat) — jump over it | — (hit if touched) | Backyard |
-| **Squirrel** | Runs at Dulce when she's within 6 tiles, hops small gaps | Scurries off-screen | Park |
+| **Squirrel** | Runs at Dolce when she's within 6 tiles, hops small gaps | Scurries off-screen | Park |
 | **Robo-Vac** | Slow, wide; stomp flips it over, then it can be shoved and slides, bonking other pests (the "shell" equivalent) | Flips; kick to slide | Street |
-| **Seagull** | Flies a sine path, swoops when above Dulce | Feathers | Pier |
+| **Seagull** | Flies a sine path, swoops when above Dolce | Feathers | Pier |
 | **Hot-Sauce Bottle** | Hops in place; spits a slow drop in an arc | Pops a lid | Night Market |
 
 Enemies are model-side data (`enemy_state` dictionaries inside `run_state.gd`
@@ -216,7 +216,7 @@ stomp points: 200, chained stomps without touching ground 200 → 400 → 800 �
 
 **Distance is the headline** on the HUD, results, share card and achievements;
 score is the secondary line. "Best distance" is persisted (in
-`user://dulces_adventure.cfg`, declared as a `save_files` entry — progress,
+`user://dolces_adventure.cfg`, declared as a `save_files` entry — progress,
 not an option). Layout: one `ConfigFile` section per start point
 (`[backyard]`, later `[park]`, … and the fixed stages), each holding
 `distance`, `score` and `burgers`. Each field only ever goes up, and a save
@@ -227,13 +227,13 @@ deletes it.
 
 Tunable *Auto-run*, default **off**. A constants-only options file cannot pick
 a per-device default, so the touch HUD instead shows a one-time hint offering
-it when `DisplayServer.is_touchscreen_available()`. When on, Dulce always runs right at
+it when `DisplayServer.is_touchscreen_available()`. When on, Dolce always runs right at
 `RUN_SPEED`; left slows her to `WALK_SPEED` instead of turning. This is what
 makes the game playable one-thumbed on a phone.
 
 ### 4.7 The camera never goes back
 
-Like SMB, the camera only scrolls forward. Dulce can walk back up to the left
+Like SMB, the camera only scrolls forward. Dolce can walk back up to the left
 edge of the view but not beyond. This bounds the stream (§5.2) and stops
 enemy/collectible farming.
 
@@ -271,7 +271,7 @@ same way every time. A pest or `S` glyph stands on the bottom of its cell. Every
 ### 5.2 Streaming — `level_stream.gd`
 
 - A run has a **seed** (random per run, 0–999,999; shown in the results
-  stats so a great run can be replayed with `-- --dulce-seed=<n>`, and so
+  stats so a great run can be replayed with `-- --dolce-seed=<n>`, and so
   tests are deterministic). Which chunk comes next depends only on the seed
   and the chunks already placed, never on how the run is played.
 - The stream keeps ~3 screens of chunks ahead of the camera and frees chunks
@@ -341,7 +341,7 @@ unlocks — but here a "level" is **where a run starts**:
 
 - **Endless - Backyard** — always open.
 - **Endless - the Park** — unlocked by running 400 m
-  (`dulces_adventure_reached_park`).
+  (`dolces_adventure_reached_park`).
 - **Endless - Main Street** — unlocked by running 900 m.
 - **Endless - the Boardwalk Pier** / **Endless - the Night Market** — likewise.
 
@@ -367,7 +367,7 @@ Owner decisions, recorded in `TODO.md`:
 - **The goal** is the `F` glyph: a food truck with a chequered flag, on solid
   ground, with ground running on past it. Passing it clears the stage. The
   clock (model time, so the game-speed assist never changes a time) stops,
-  Dulce sits for 1.4 s, then the results open.
+  Dolce sits for 1.4 s, then the results open.
 - **The headline is the clear time** ("NEW BEST: 1:04.3!"), with burgers
   shown as "X of Y" and score below. The best time per stage lives in the
   best-runs file as `time_ms` in the stage's section; it only goes down, and
@@ -375,7 +375,7 @@ Owner decisions, recorded in `TODO.md`:
 - **Losing the last heart ends the attempt**, as on an endless run: the
   results say how far from the goal she got. Play Again restarts the stage.
 - **Unlocks:** Stage 1 is open. Clearing Stage N unlocks
-  `dulces_adventure_cleared_<biome>` (permanent keys), which opens Stage N+1
+  `dolces_adventure_cleared_<biome>` (permanent keys), which opens Stage N+1
   in the shared level selector.
 
 ---
@@ -384,10 +384,10 @@ Owner decisions, recorded in `TODO.md`:
 
 ```
 game.gd                     # GameManifest — copy, theme, achievements, credits
-dulces_adventure_options.gd # constants-only: tunables, bindings, store, gallery
+dolces_adventure_options.gd # constants-only: tunables, bindings, store, gallery
 gameplay.gd / .tscn         # extends GameShell; inherited scene of game_shell.tscn
 tile_grid.gd                # live tiles the body collides with; the stream feeds it
-run_records.gd              # best runs in user://dulces_adventure.cfg
+run_records.gd              # best runs in user://dolces_adventure.cfg
 intro.tscn                  # four story cards, inheriting the framework intro
 run_state.gd                # node-free 120 Hz body, hits, hearts, scoring
 pests.gd                    # node-free enemy behaviours
@@ -397,13 +397,13 @@ stages.gd                   # the five fixed stages: chunk lists, lengths, time 
 world_view.gd               # isolated SubViewport, orthographic camera, one baked mesh per chunk
 run_controls.gd             # keyboard, gamepad, multitouch
 run_hud.gd                  # hearts, distance, burgers, score, pause
-dulce_audio.gd              # synthesized cues
-dulce_art.gd                # palette, WORLD_SCALE, world_point(), materials
-share_art.gd / .tscn        # Dulce's victory sit beside a Big Burger for the share card
-store_preview.gd / .tscn    # Dulce wearing one item, drawn once
+dolce_audio.gd              # synthesized cues
+dolce_art.gd                # palette, WORLD_SCALE, world_point(), materials
+share_art.gd / .tscn        # Dolce's victory sit beside a Big Burger for the share card
+store_preview.gd / .tscn    # Dolce wearing one item, drawn once
 gallery_stage.gd / .tscn    # turntable for the Gallery
-character_preview.gd / .tscn # Dulce in her equipped outfit on the setup plinth
-world/dulce_model.gd        # procedural rig: poses, ears/tail, Full state, outfit sockets
+character_preview.gd / .tscn # Dolce in her equipped outfit on the setup plinth
+world/dolce_model.gd        # procedural rig: poses, ears/tail, Full state, outfit sockets
 world/outfit_models.gd      # collar, hat and bandana/cape meshes from the store items
 world/studio.gd             # the lit SubViewport set every portrait above stands in
 world/biome_props.gd        # per-biome palettes, props, gate signs and backdrops (batched)
@@ -447,20 +447,20 @@ and gameplay calls the shell's normal end-of-round path, as Cube Trials does.
 ### 6.3 Manifest sketch
 
 ```gdscript
-game.id = Options.GAME_ID                       # "dulces_adventure"
-game.title = "Dulce's Adventure"
+game.id = Options.GAME_ID                       # "dolces_adventure"
+game.title = "Dolce's Adventure"
 game.tagline = "Small dog. Big appetite. Long way to lunch."
 game.menu_order = 9
-game.gameplay_scene_path = "res://games/dulces_adventure/gameplay.tscn"
-game.intro_scene_path = "res://games/dulces_adventure/intro.tscn"
+game.gameplay_scene_path = "res://games/dolces_adventure/gameplay.tscn"
+game.intro_scene_path = "res://games/dolces_adventure/intro.tscn"
 game.control_style = GameManifest.CONTROL_STYLE_CUSTOM_KEYS
 game.uses_shell_round_rules = false
 game.supports_multiplayer = false               # v1; see §11
 game.supports_cpu_opponent = false
 game.levels = Options.LEVELS                    # start biomes, achievement-gated
-game.save_files = [{"path": "user://dulces_adventure.cfg", "title": "Best runs",
+game.save_files = [{"path": "user://dolces_adventure.cfg", "title": "Best runs",
 		"description": "Best distance, score and burgers from each start point, and stage times."}]
-game.characters = Options.CHARACTERS            # Dulce alone, so the plinth shows her
+game.characters = Options.CHARACTERS            # Dolce alone, so the plinth shows her
 game.character_preview_scene_path = ".../character_preview.tscn"
 game.tunables / control_bindings / store_* / gallery_* = Options.*
 game.tutorial_video_path / tutorial_poster_path
@@ -480,25 +480,25 @@ game.theme = theme                              # §7.3
 - **Original** low-poly models, vertex-coloured, built from rounded
   primitives in GDScript through `mesh_builder.gd` (owner decision: no
   Blender on the build machine, and procedural parts keep poses testable
-  headless, as Chicken Pit's birds are). Dulce is a rig of rigid parts, one
+  headless, as Chicken Pit's birds are). Dolce is a rig of rigid parts, one
   pivot per head, ear, leg, tail and collar. A Blender GLB could replace any
   part later behind the same calls. Scenery is batched the same way.
-- Warm daylight rig with Compatibility shadows; Dulce casts a blob or real
+- Warm daylight rig with Compatibility shadows; Dolce casts a blob or real
   shadow so her height over a pit is always readable.
 - Depth layers: playfield at depth 0; props at ±1–3 m; a far parallax backdrop
   (hills, rooftops, skyline) — real geometry, not a flat image, but cheap.
 - Bounded, shadow-free particle batches; nothing per-frame-allocated.
 
-### 7.2 Dulce
+### 7.2 Dolce
 
 Chihuahua mix — big upright ears, short muzzle, round eyes, compact body,
 slightly longer legs than a pure chihuahua (the "mix"), curled tail. Coat:
 **fawn/tan with a cream chest and muzzle** *(the assumed look, used until
 reference photos arrive — see §13.1; every coat colour lives in
-`dulce_art.gd`, so photos mean a recolour, not a new rig)*. Collar socket
+`dolce_art.gd`, so photos mean a recolour, not a new rig)*. Collar socket
 for store items; the default collar is red.
 
-Poses (angles on the rig's pivots; `dulce_model.pose_for(state)` picks one):
+Poses (angles on the rig's pivots; `dolce_model.pose_for(state)` picks one):
 idle (tail wag), trot, sprint (ears back), jump-up, apex, fall, land
 (squash), stomp-bounce, hit (flustered), tumble (run over), eat (chomp,
 crumbs), Full (rounder belly morph), victory sit for the results and share card.
@@ -514,20 +514,20 @@ const CREAM := Color("fff1d6")
 const MUSTARD := Color("f2b33d")   # accent — burger cheese
 const KETCHUP := Color("d9533b")
 const LETTUCE := Color("6fae4f")
-const FAWN := Color("d6a26b")      # Dulce
+const FAWN := Color("d6a26b")      # Dolce
 ```
 
 `GameTheme`: accent `MUSTARD`, light `CREAM`, plaque `Color("5a3d2e")`,
 background top/bottom a warm brown-to-plum gradient, `style_share_card = true`,
-logo `assets/game-icon.png` (Dulce's head holding a burger, captured from the
+logo `assets/game-icon.png` (Dolce's head holding a burger, captured from the
 real model by `tools/capture_art.gd`).
 
 ---
 
 ## 8. Controls
 
-Rebindable actions in `dulces_adventure_options.gd` (prefix every action and
-key with `dulces_adventure_`):
+Rebindable actions in `dolces_adventure_options.gd` (prefix every action and
+key with `dolces_adventure_`):
 
 | Action | Keyboard | Gamepad | Touch |
 | --- | --- | --- | --- |
@@ -546,10 +546,10 @@ descriptions keep the names.
 
 | Key | Type | Default |
 | --- | --- | --- |
-| `game/dulces_adventure_auto_run` | toggle | false |
-| `game/dulces_adventure_kind_pits` | toggle | false |
-| `game/dulces_adventure_game_speed` | slider 70–100% | 100% |
-| `game/dulces_adventure_day_night` | toggle | true |
+| `game/dolces_adventure_auto_run` | toggle | false |
+| `game/dolces_adventure_kind_pits` | toggle | false |
+| `game/dolces_adventure_game_speed` | slider 70–100% | 100% |
+| `game/dolces_adventure_day_night` | toggle | true |
 
 Assists never block achievements (Cube Trials' rule).
 
@@ -561,18 +561,18 @@ Assists never block achievements (Cube Trials' rule).
 
 | Key | Title | Badge | Condition |
 | --- | --- | --- | --- |
-| `dulces_adventure_reached_park` | Off the Leash | PARK | Run 400 m in one run |
-| `dulces_adventure_reached_street` | Street Smart | STREET | Run 900 m in one run |
-| `dulces_adventure_reached_pier` | Sea Legs | PIER | Run 1,500 m in one run |
-| `dulces_adventure_reached_market` | Follow Your Nose | MARKET | Run 2,200 m in one run |
-| `dulces_adventure_hundred` | Hungry Hungry | 100 | 100 burgers in one run |
-| `dulces_adventure_combo` | Boing Boing Boing | COMBO | 4-stomp chain |
-| `dulces_adventure_clean` | Not a Scratch | CLEAN | 500 m without a hit or a fall |
-| `dulces_adventure_cleared_backyard` | Out the Gate | STAGE 1 | Clear Stage 1; opens Stage 2 |
-| `dulces_adventure_cleared_park` | Walk in the Park | STAGE 2 | Clear Stage 2; opens Stage 3 |
-| `dulces_adventure_cleared_street` | Street Food | STAGE 3 | Clear Stage 3; opens Stage 4 |
-| `dulces_adventure_cleared_pier` | Pier Pressure | STAGE 4 | Clear Stage 4; opens Stage 5 |
-| `dulces_adventure_cleared_market` | Last Stop, Lunch | STAGE 5 | Clear Stage 5 |
+| `dolces_adventure_reached_park` | Off the Leash | PARK | Run 400 m in one run |
+| `dolces_adventure_reached_street` | Street Smart | STREET | Run 900 m in one run |
+| `dolces_adventure_reached_pier` | Sea Legs | PIER | Run 1,500 m in one run |
+| `dolces_adventure_reached_market` | Follow Your Nose | MARKET | Run 2,200 m in one run |
+| `dolces_adventure_hundred` | Hungry Hungry | 100 | 100 burgers in one run |
+| `dolces_adventure_combo` | Boing Boing Boing | COMBO | 4-stomp chain |
+| `dolces_adventure_clean` | Not a Scratch | CLEAN | 500 m without a hit or a fall |
+| `dolces_adventure_cleared_backyard` | Out the Gate | STAGE 1 | Clear Stage 1; opens Stage 2 |
+| `dolces_adventure_cleared_park` | Walk in the Park | STAGE 2 | Clear Stage 2; opens Stage 3 |
+| `dolces_adventure_cleared_street` | Street Food | STAGE 3 | Clear Stage 3; opens Stage 4 |
+| `dolces_adventure_cleared_pier` | Pier Pressure | STAGE 4 | Clear Stage 4; opens Stage 5 |
+| `dolces_adventure_cleared_market` | Last Stop, Lunch | STAGE 5 | Clear Stage 5 |
 
 The first four also gate the start-biome levels (§5.4).
 
@@ -600,13 +600,13 @@ the item's own entry, so the store's swatch and the worn mesh always agree.
 | Bandana | Mustard bandana | 70 | — |
 | Bandana | Superhero cape | 250 | Run 1,500 m |
 
-`store_preview.tscn` draws Dulce wearing one item, once per card (no live
-render loop on a shelf of cards). The setup screen's plinth shows Dulce, the
+`store_preview.tscn` draws Dolce wearing one item, once per card (no live
+render loop on a shelf of cards). The setup screen's plinth shows Dolce, the
 manifest's single `characters` entry, in her equipped outfit.
 
 ### 9.3 Gallery
 
-`GALLERY_EXHIBITS`: Dulce (idle, Full; both in her equipped outfit), pigeon,
+`GALLERY_EXHIBITS`: Dolce (idle, Full; both in her equipped outfit), pigeon,
 gnome, Lunchbox block, Big Burger and Golden Bone are open from the start.
 Each later pest waits for the reach achievement of the biome it first appears
 in (squirrel: Park, robo-vac: Main Street, seagull: Pier, hot sauce: Night
@@ -616,7 +616,7 @@ Stage 1. `gallery_stage.tscn` implements `configure`, `set_view` and
 
 ### 9.4 Share card
 
-`share_art.tscn`: Dulce in the outfit she ran in (the payload's `outfit`),
+`share_art.tscn`: Dolce in the outfit she ran in (the payload's `outfit`),
 in the victory sit on a little lawn beside a Big Burger, under the Backyard
 sky. The shell's card around it carries the headline: distance on an endless
 run, clear time on a stage, with burgers, score and the QR to `stats_url`.
@@ -633,7 +633,7 @@ run, clear time on a stage, with burgers, score and the QR to `stats_url`.
   stomp chain, biome reached, run over.
 - Game speed slider (§8) for players who need more reaction time.
 
-### 9.6 Audio — `dulce_audio.gd`
+### 9.6 Audio — `dolce_audio.gd`
 
 Synthesized like `cube_audio.gd`: jump yip (pitch rises with jump strength),
 land pat, stomp boing (pitch climbs with the chain), munch, Full "gulp",
@@ -648,13 +648,13 @@ Headless unless noted; each a standalone `SceneTree` script that exits 0.
 
 | Suite | Covers |
 | --- | --- |
-| `dulce_physics_test.gd` | Accel/decel, max speeds, jump apex for tap vs hold, coyote, buffer, no double jump, fall cap, game-speed scaling |
-| `dulce_rules_test.gd` | Stomp vs side hit, Full ↔ Normal, hearts, i-frames, pit respawn at last `S`, 100-burger heart, stomp chain points, run end |
-| `dulce_chunks_test.gd` | `validate()` on **every** chunk: seams, max gap/height vs `run_state` constants, spawns, safe ground |
-| `dulce_stream_test.gd` | Same seed ⇒ same world; difficulty ramp; breather spacing; no immediate repeats; window frees old chunks |
-| `dulce_pests_test.gd` | Each enemy's behaviour, robo-vac kick chain, seagull swoop bounds |
-| `dulce_scene_test.gd` | Gameplay scene loads under the shell, HUD and outfit bind, pause, endless and stage results, Treats payout, stage-clear unlock |
-| `dulce_view_test.gd` *(window)* | Real render: Dulce visible and unobstructed, layouts portrait → ultrawide, touch buttons don't cover the ground line |
+| `dolce_physics_test.gd` | Accel/decel, max speeds, jump apex for tap vs hold, coyote, buffer, no double jump, fall cap, game-speed scaling |
+| `dolce_rules_test.gd` | Stomp vs side hit, Full ↔ Normal, hearts, i-frames, pit respawn at last `S`, 100-burger heart, stomp chain points, run end |
+| `dolce_chunks_test.gd` | `validate()` on **every** chunk: seams, max gap/height vs `run_state` constants, spawns, safe ground |
+| `dolce_stream_test.gd` | Same seed ⇒ same world; difficulty ramp; breather spacing; no immediate repeats; window frees old chunks |
+| `dolce_pests_test.gd` | Each enemy's behaviour, robo-vac kick chain, seagull swoop bounds |
+| `dolce_scene_test.gd` | Gameplay scene loads under the shell, HUD and outfit bind, pause, endless and stage results, Treats payout, stage-clear unlock |
+| `dolce_view_test.gd` *(window)* | Real render: Dolce visible and unobstructed, layouts portrait → ultrawide, touch buttons don't cover the ground line |
 
 The framework suites (`game_shell_test`, `game_options_test`,
 `accessibility_test`, `visual_effects_test`, `single_game_test`,
@@ -665,15 +665,15 @@ The framework suites (`game_shell_test`, `game_options_test`,
 
 ## 11. Integration checklist (outside this folder)
 
-These are the only edits outside `games/dulces_adventure/`:
+These are the only edits outside `games/dolces_adventure/`:
 
-- [ ] `project.godot`: `config/name.dulces_adventure`,
-      `config/custom_user_dir_name.dulces_adventure="DeskCanSaw Games/Dulce's Adventure"`
-      (stable forever once shipped), `config/icon.dulces_adventure`,
-      `dcs/build/single_game_id.dulces_adventure`, and
-      `[share] stats_urls/dulces_adventure`.
+- [ ] `project.godot`: `config/name.dolces_adventure`,
+      `config/custom_user_dir_name.dolces_adventure="DeskCanSaw Games/Dolce's Adventure"`
+      (stable forever once shipped), `config/icon.dolces_adventure`,
+      `dcs/build/single_game_id.dolces_adventure`, and
+      `[share] stats_urls/dolces_adventure`.
 - [ ] `export_presets.cfg`: a standalone preset with the feature tag; add
-      `games/dulces_adventure/*` to the other presets' `exclude_filter`.
+      `games/dolces_adventure/*` to the other presets' `exclude_filter`.
 - [ ] `.gitmodules` + gitlink once the folder has a remote (two commits: one
       in the game repo, one in `dcs_games`).
 - [ ] Root `AGENTS.md`: games table, submodule list, options-file list, test
@@ -696,7 +696,7 @@ No framework code changes are expected. If one seems needed, add data to
    results, achievements for distance. Rules + pests tests.
 3. **Stream.** Chunk library (≥ 15 Backyard chunks), validator, seeded
    stream, difficulty ramp. Chunks + stream tests.
-4. **Dulce.** Blender model, GLB, poses, Full morph, particles, audio.
+4. **Dolce.** Blender model, GLB, poses, Full morph, particles, audio.
 5. **Biomes 2–5.** Props, palettes, remaining enemies, level gates, captured
    level stills.
 6. **Shell features.** Store, gallery, share art, character preview, intro,
@@ -711,7 +711,7 @@ reuse Cube Trials' hand-off flow), a daily seed, chase camera, music bed.
 
 ## 13. Open questions for the owner
 
-1. **Dulce's real look** — is she based on a real dog? Reference photos would
+1. **Dolce's real look** — is she based on a real dog? Reference photos would
    pin coat colours, ear shape and markings (§7.2 assumes fawn with cream).
 2. **Endless vs authored levels** — this doc picks endless (seeded chunks) to
    match "go as far as possible". Confirm, or should there also be a few
@@ -719,6 +719,6 @@ reuse Cube Trials' hand-off flow), a daily seed, chase camera, music bed.
 3. **Hearts count** — 3 with a Full buffer (Mario-like), or Cube Trials' 5?
 4. **Hot seat in v1?** Defaulted to v2 to keep v1 small.
 5. **Name of the store currency** — *answered:* "Treats" (§9.2).
-6. **Standalone title / user dir name** — "Dulce's Adventure" with an
+6. **Standalone title / user dir name** — "Dolce's Adventure" with an
    apostrophe in `custom_user_dir_name`; confirm before first ship, since it
    can never change afterwards.

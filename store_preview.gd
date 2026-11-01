@@ -1,6 +1,6 @@
 extends Control
 
-## The picture on a store card: Dulce herself, wearing the item that card sells.
+## The picture on a store card: Dolce herself, wearing the item that card sells.
 ##
 ## The store asks for this by path (`GameManifest.store_preview_scene_path`) and
 ## hands it the item, so the framework never learns what a chihuahua mix looks
@@ -9,11 +9,11 @@ extends Control
 ## to deliver. Still on purpose: a shelf is for comparing at a glance, and a
 ## card that moved would leave reduced motion something to switch off.
 
-const Studio = preload("res://games/dulces_adventure/world/studio.gd")
-const DulceModel = preload("res://games/dulces_adventure/world/dulce_model.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
+const Studio = preload("res://games/dolces_adventure/world/studio.gd")
+const DolceModel = preload("res://games/dolces_adventure/world/dolce_model.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
 
 ## Front three-quarter: she faces +X, so the lens stands off her nose and near
 ## flank, where a collar, a hat brim and a bandana all read.
@@ -21,7 +21,7 @@ const LENS := Vector3(1.0, 0.35, 1.25)
 const FIELD_OF_VIEW := 30.0
 
 var _set: Dictionary = {}
-var _dulce: DulceModel
+var _dolce: DolceModel
 var _item: Dictionary = {}
 var _inert := false
 var _draw_queued := false
@@ -34,10 +34,10 @@ func _ready() -> void:
 		return
 	_set = Studio.build(self)
 	(_set["viewport"] as SubViewport).render_target_update_mode = SubViewport.UPDATE_DISABLED
-	_dulce = DulceModel.new()
-	(_set["stage"] as Node3D).add_child(_dulce)
-	_dulce.present(_standing(), 0.0, true)
-	_dulce.position = Vector3.ZERO
+	_dolce = DolceModel.new()
+	(_set["stage"] as Node3D).add_child(_dolce)
+	_dolce.present(_standing(), 0.0, true)
+	_dolce.position = Vector3.ZERO
 	resized.connect(_reframe)
 	visibility_changed.connect(_request_draw)
 	_show()
@@ -47,7 +47,7 @@ func _ready() -> void:
 ## the card shows only what it sells. Ownership and price never matter here.
 func configure(item: Dictionary) -> void:
 	_item = item.duplicate(true)
-	if not _inert and _dulce != null:
+	if not _inert and _dolce != null:
 		_show()
 
 
@@ -68,14 +68,14 @@ func _show() -> void:
 
 
 func _dress(collar: String, hat: String, neck: String) -> void:
-	_dulce.set_outfit(collar, hat, neck)
+	_dolce.set_outfit(collar, hat, neck)
 	_reframe()
 
 
 func _reframe() -> void:
-	if _dulce == null or size.x < 1.0 or size.y < 1.0:
+	if _dolce == null or size.x < 1.0 or size.y < 1.0:
 		return
-	var box := Studio.bounds(_set["stage"], _dulce)
+	var box := Studio.bounds(_set["stage"], _dolce)
 	Studio.frame(_set["camera"], box, _lens(), FIELD_OF_VIEW, size.x / size.y, _margin())
 	_request_draw()
 

@@ -5,8 +5,8 @@ extends SceneTree
 ## Pests are plain dictionaries stepped against a tile grid, so each case
 ## builds a strip of ground, steps the pests alone and reads them back.
 
-const Pests = preload("res://games/dulces_adventure/pests.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
+const Pests = preload("res://games/dolces_adventure/pests.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
 
 const STEP := 1.0 / 120.0
 const TILE := Grid.TILE
@@ -40,10 +40,10 @@ func _grid(rows: Array[String]) -> Grid:
 	return Grid.new(rows)
 
 
-## Steps every pest for `seconds`, with Dulce standing at `dulce_x`.
-func _step(pests: Pests, grid: Grid, seconds: float, dulce_x := 0.0, dulce_y := FLOOR_Y) -> void:
+## Steps every pest for `seconds`, with Dolce standing at `dolce_x`.
+func _step(pests: Pests, grid: Grid, seconds: float, dolce_x := 0.0, dolce_y := FLOOR_Y) -> void:
 	for _tick in roundi(seconds / STEP):
-		pests.step(grid, Vector2(dulce_x, dulce_y), STEP)
+		pests.step(grid, Vector2(dolce_x, dolce_y), STEP)
 
 
 ## A pigeon on a six-tile island patrols it and never walks off.
@@ -115,7 +115,7 @@ func _test_activation_range() -> void:
 		"A pigeon out of range waits where it was placed.")
 	_step(pests, grid, 1.0, 40.5 * TILE - Pests.ACTIVE_RANGE + TILE)
 	_expect(pigeon["active"] and pigeon["position"].x < start.x,
-		"Once Dulce is in range it starts its patrol, toward her.")
+		"Once Dolce is in range it starts its patrol, toward her.")
 	_step(pests, grid, 1.0, 0.0)
 	_expect(pigeon["active"], "An active pest stays active.")
 
@@ -296,7 +296,7 @@ func _expect(condition: bool, message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("Dulce pests tests passed.")
+		print("Dolce pests tests passed.")
 		quit(0)
 		return
 	for failure in _failures:

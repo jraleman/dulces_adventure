@@ -9,9 +9,9 @@ extends RefCounted
 ## headline is the clear time. Constants and pure helpers only: no nodes, no
 ## autoloads.
 
-const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
-const Options = preload("res://games/dulces_adventure/dulces_adventure_options.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
+const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
+const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
 
 ## A stage is a short course: long enough to be a journey through its biome,
 ## short enough to retry for a better time.

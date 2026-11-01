@@ -7,12 +7,12 @@ extends PanelContainer
 ## every counter also has a sentence for assistive technology.
 ## Reads the model it is handed; touches no autoload.
 
-const Art = preload("res://games/dulces_adventure/dulce_art.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const HEART = preload("res://games/dulces_adventure/assets/icons/heart.svg")
-const HEART_EMPTY = preload("res://games/dulces_adventure/assets/icons/heart_empty.svg")
-const BURGER = preload("res://games/dulces_adventure/assets/icons/burger.svg")
-const FULL = preload("res://games/dulces_adventure/assets/icons/full.svg")
+const Art = preload("res://games/dolces_adventure/dolce_art.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const HEART = preload("res://games/dolces_adventure/assets/icons/heart.svg")
+const HEART_EMPTY = preload("res://games/dolces_adventure/assets/icons/heart_empty.svg")
+const BURGER = preload("res://games/dolces_adventure/assets/icons/burger.svg")
+const FULL = preload("res://games/dolces_adventure/assets/icons/full.svg")
 
 const ICON_SIZE := 30.0
 

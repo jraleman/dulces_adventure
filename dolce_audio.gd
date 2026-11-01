@@ -1,6 +1,6 @@
 extends RefCounted
 
-## Dulce's sounds, synthesized at load time, and what each run event says.
+## Dolce's sounds, synthesized at load time, and what each run event says.
 ##
 ## Original short PCM cues keep the game self-contained, like Cube Trials'
 ## `cube_audio.gd`: yips, pats, boings, munches, a gulp, a whine, a chime, a
@@ -9,8 +9,8 @@ extends RefCounted
 ## the accessibility rule (every meaningful sound-only event is captioned) is
 ## testable headless (DESIGN §9.5, §9.6). Touches no autoload.
 
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Stages = preload("res://games/dulces_adventure/stages.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Stages = preload("res://games/dolces_adventure/stages.gd")
 
 const RATE := 22050
 ## Peak level, as a fraction of 16-bit full scale.

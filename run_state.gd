@@ -1,14 +1,14 @@
 extends RefCounted
 
-## Fixed-step platformer body and run rules for Dulce, independent of nodes
+## Fixed-step platformer body and run rules for Dolce, independent of nodes
 ## and autoloads.
 ##
 ## Every tuning constant sits at the top so the tests, the tunables and the
 ## chunk validator quote the same numbers (DESIGN §4). Units are y-down
 ## simulation units; one tile is `Grid.TILE` (40) units, one metre.
 
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
-const Pests = preload("res://games/dulces_adventure/pests.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
+const Pests = preload("res://games/dolces_adventure/pests.gd")
 
 const STEP := 1.0 / 120.0
 const WALK_SPEED := 220.0
@@ -489,7 +489,7 @@ func _supported() -> bool:
 # --------------------------------------------------------------------------
 
 
-## A burger goes straight into Dulce; a Big Burger pops out on top of the box.
+## A burger goes straight into Dolce; a Big Burger pops out on top of the box.
 func _open_lunchbox(cell: Vector2i) -> void:
 	var content: String = lunchboxes.get(cell, BURGER)
 	lunchboxes.erase(cell)

@@ -4,9 +4,9 @@ extends SceneTree
 ## `validate()`, the library is big and varied enough, and the validator
 ## itself rejects the unfair shapes it exists to catch.
 
-const ChunkLibrary = preload("res://games/dulces_adventure/chunk_library.gd")
-const State = preload("res://games/dulces_adventure/run_state.gd")
-const Grid = preload("res://games/dulces_adventure/tile_grid.gd")
+const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
+const State = preload("res://games/dolces_adventure/run_state.gd")
+const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
 
 const OPEN := "................"
 const GROUND := "################"
@@ -111,7 +111,7 @@ func _test_biomes() -> void:
 func _test_start_chunk() -> void:
 	var rows := ChunkLibrary.rows_of(ChunkLibrary.START)
 	_expect(rows[ChunkLibrary.SEAM_ROW - 1][ChunkLibrary.START_COLUMN] == "S",
-		"Dulce starts on the start chunk's safe ground.")
+		"Dolce starts on the start chunk's safe ground.")
 	_expect(ChunkLibrary.start_position()
 		== Vector2((ChunkLibrary.START_COLUMN + 0.5) * Grid.TILE, ChunkLibrary.SEAM_ROW * Grid.TILE),
 		"The start position stands on the seam.")
@@ -221,7 +221,7 @@ func _expect(condition: bool, message: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("Dulce chunk tests passed.")
+		print("Dolce chunk tests passed.")
 		quit(0)
 		return
 	for failure in _failures:
