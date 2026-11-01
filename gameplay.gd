@@ -5,14 +5,15 @@ extends GameShell
 ## The shell's countdown and lives pool are off (`uses_shell_round_rules =
 ## false`): the model owns hearts, and a run ends through the shell's normal
 ## `_end_round()` once her last heart is gone and the tumble has played, or
-## once she reaches a fixed stage's goal. An endless run is a fresh seed of
-## the chunk stream (`--dolce-seed=<n>` after `--` replays one); a stage is
-## the same course every time, timed.
+## once she reaches a fixed stage's goal. Ordinary endless runs use fresh seeds
+## (`--dolce-seed=<n>` after `--` replays one); Daily UTC captures its date's
+## seed, and a stage is the same course every time, timed.
 
 const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
 const State = preload("res://games/dolces_adventure/run_state.gd")
 const LevelStream = preload("res://games/dolces_adventure/level_stream.gd")
 const Stages = preload("res://games/dolces_adventure/stages.gd")
+const DailyRun = preload("res://games/dolces_adventure/daily_run.gd")
 const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
 const WorldView = preload("res://games/dolces_adventure/world_view.gd")
 const RunControls = preload("res://games/dolces_adventure/run_controls.gd")
@@ -37,10 +38,12 @@ var _cues: Dictionary[String, AudioStreamWAV] = {}
 ## What she wears, by store item id: collar, hat, neck.
 var _outfit: Array[String] = [Options.COLLAR_RED, "", ""]
 var _start_id := Options.START_BACKYARD
+var _record_id := Options.START_BACKYARD
+var _daily: DailyRun
 var _start_biome: int = ChunkLibrary.Biome.BACKYARD
 ## The fixed stage being played, or empty on an endless run.
 var _stage: Dictionary = {}
-## This start point's best run before the current one, for "new best" copy.
+## This start, stage or UTC date's best before the current run.
 var _best := {}
 var _auto_run := false
 var _kind_pits := false
@@ -55,6 +58,7 @@ var _header_fonts: Dictionary[Label, int] = {}
 var _header_styles: Dictionary[PanelContainer, StyleBoxFlat] = {}
 var _header_layout := Vector3(-1, -1, -1)
 var _header_touch := false
+var _header_date_font := 0
 var _hud_margins: MarginContainer
 var _normal_margins := PackedInt32Array()
 var _normal_card_minimum := Vector2.ZERO
@@ -117,18 +121,24 @@ func _build_playfield() -> void:
 func _reset_round_state() -> void:
 	_jump_pending = false
 	_ended = false
-	_seed = _requested_seed()
 	_start_id = str(GameSession.selected_level().get("id", Options.START_BACKYARD))
+	_daily = DailyRun.new(_run_unix_time()) if _start_id == Options.DAILY else null
+	_record_id = _daily.record_id if _daily != null else _start_id
+	_seed = _requested_seed()
 	_stage = Stages.find(_start_id)
-	_start_biome = int(_stage["biome"]) if not _stage.is_empty() \
-		else ChunkLibrary.biome_named(_start_id)
+	if not _stage.is_empty():
+		_start_biome = int(_stage["biome"])
+	elif _daily != null:
+		_start_biome = ChunkLibrary.Biome.BACKYARD
+	else:
+		_start_biome = ChunkLibrary.biome_named(_start_id)
 	_stream = LevelStream.new(_seed, _start_biome, _stage)
 	_state = _stream.start()
 	_state.auto_run = _auto_run
 	_state.kind_pits = _kind_pits
 	# Applied per run, so a jump never changes speed half-way through.
 	_state.time_scale = _game_speed
-	_best = _records.best(_start_id)
+	_best = _records.best(_record_id)
 	if _controls != null:
 		_controls.set_enabled(true)
 	if _view != null:
@@ -159,12 +169,19 @@ func _on_pause_closed() -> void:
 	_dress()
 
 
-## The debug seed when one was passed, otherwise a fresh one every run.
+## Daily UTC cannot silently use a replay override and claim a shared course.
 func _requested_seed() -> int:
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with(SEED_ARGUMENT):
+			if _daily != null:
+				push_warning("Daily UTC uses its date's seed; --dolce-seed is ignored.")
+				break
 			return int(argument.trim_prefix(SEED_ARGUMENT))
-	return LevelStream.random_seed()
+	return _daily.seed if _daily != null else LevelStream.random_seed()
+
+
+func _run_unix_time() -> int:
+	return floori(Time.get_unix_time_from_system())
 
 
 func _live_chunks() -> Array[Dictionary]:
@@ -243,10 +260,11 @@ func _sync_hud() -> void:
 		return
 	_scores[PLAYER_ONE] = _state.score()
 	_update_scores()
+	_mode_title.text = "DAILY UTC" if _daily != null else _game_title().to_upper()
 	# The headline takes the shell's big card: distance on an endless run
 	# (DESIGN §4.5), the clock on a stage (§5.5).
 	if _stage.is_empty():
-		_time_caption.text = "DISTANCE"
+		_time_caption.text = _daily.utc_date + " UTC" if _daily != null else "DISTANCE"
 		_time_label.text = "%d m" % floori(_state.distance_m())
 	else:
 		_time_caption.text = "TIME  ·  %d / %d M" % [
@@ -310,10 +328,15 @@ func _describe_round_outcome(_one: int, _two: int) -> Dictionary:
 		"%d m from %s" % [distance, _start_title()],
 		"%d burgers, %d stomps" % [_state.burgers, _state.stomps],
 	])
+	if _daily != null:
+		lines.insert(0, "%s UTC, seed %06d" % [_daily.utc_date, _seed])
 	if not new_best and best > 0:
-		lines.append("Best: %d m" % best)
+		lines.append("%s: %d m" % ["Daily best" if _daily != null else "Best", best])
+	var result := "NEW BEST: %d M!" % distance if new_best else "RUN OVER: %d M" % distance
+	if _daily != null:
+		result = "NEW DAILY BEST: %d M!" % distance if new_best else "DAILY RUN: %d M" % distance
 	return {
-		"result": "NEW BEST: %d M!" % distance if new_best else "RUN OVER: %d M" % distance,
+		"result": result,
 		"subtitle": "  ·  ".join(lines),
 		"color": Art.MUSTARD if new_best else Art.CREAM,
 	}
@@ -353,6 +376,8 @@ func _describe_stage() -> Dictionary:
 
 
 func _stage_title() -> String:
+	if _daily != null:
+		return "Daily UTC - " + _daily.utc_date
 	for level: Dictionary in Options.LEVELS:
 		if level["id"] == _start_id:
 			return str(level["title"])
@@ -377,7 +402,7 @@ func _award_round_achievements(_one: int, _two: int) -> void:
 		var next := _next_stage()
 		if opened and not next.is_empty():
 			_round_progression_notes.append("%s is open" % next["title"])
-	var improved := _records.record(_start_id, {
+	var improved := _records.record(_record_id, {
 		"distance": floori(distance), "score": _state.score(), "burgers": _state.burgers,
 		"time_ms": roundi(_state.clear_time * 1000.0) if _state.cleared else 0,
 	})
@@ -410,6 +435,10 @@ func _share_payload() -> Dictionary:
 	data["level_id"] = _start_id
 	data["level_title"] = _stage_title()
 	data["distance_m"] = floori(_state.distance_m())
+	if _daily != null:
+		data["mode"] = _stage_title()
+		data["daily_date"] = _daily.utc_date
+		data["course_seed"] = _seed
 	if not _stage.is_empty():
 		data["clear_time"] = Stages.time_text(_state.clear_time) if _state.cleared else ""
 	return data
@@ -446,15 +475,17 @@ func _player_stats(player: int) -> Dictionary:
 	}
 
 
-## The last stats rows: an endless run's best distance and seed, or a stage's
-## clock and food.
+## The last stats rows retain a daily run's date even if the clock has moved on.
 func _run_details() -> Array:
 	if _stage.is_empty():
-		return [
-			{"label": "Best distance", "value": "%d m" % maxi(
+		var rows: Array = [
+			{"label": "Daily best" if _daily != null else "Best distance", "value": "%d m" % maxi(
 				int(_best.get("distance", 0)), floori(_state.distance_m()))},
 			{"label": "Course seed", "value": str(_seed)},
 		]
+		if _daily != null:
+			rows.push_front({"label": "Daily UTC", "value": _daily.utc_date})
+		return rows
 	var best_ms := int(_best.get("time_ms", 0))
 	return [
 		{"label": "Time", "value": Stages.time_text(_state.clear_time) if _state.cleared
@@ -473,7 +504,12 @@ func _configure_mode_ui() -> void:
 	super()
 	_callout.hide()
 	# The results card's rules line, once a run is over.
-	if _stage.is_empty():
+	if _daily != null:
+		_round_instructions.text = (
+			"Daily UTC %s: the same course all day, unlimited retries. "
+			+ "A new UTC date gets a new course and bests."
+		) % _daily.utc_date
+	elif _stage.is_empty():
 		_round_instructions.text = "Score: metres x %d, plus food and stomps. Every run is a new course." \
 			% State.DISTANCE_POINTS
 	else:
@@ -483,6 +519,7 @@ func _configure_mode_ui() -> void:
 		Settings.control_key_label(Options.JUMP), Settings.control_key_label(Options.RUN),
 	]
 	_sync_hud()
+	_layout_view()
 
 
 func _on_game_setting_changed(key: String, _value: Variant) -> void:
@@ -571,18 +608,25 @@ func _prepare_touch_header() -> void:
 func _fit_touch_header(readability: float, touch_readability: float) -> void:
 	var touch := _controls.visible
 	var area := get_viewport_rect().size
+	var physical := maxf(WorldView.physical_scale(self), 0.01)
 	var short := touch and area.x > area.y * 1.15 \
-		and area.y * WorldView.physical_scale(self) < 480.0
+		and area.y * physical < 480.0
 	var font_scale := touch_readability if short else (readability if touch else 1.0)
 	var margin_scale := touch_readability if touch else 1.0
+	var date_font := ceili(14.0 / physical) if _daily != null else 0
 	var layout := Vector3(font_scale, margin_scale, float(short))
-	if _header_touch == touch and _header_layout.is_equal_approx(layout):
+	if _header_touch == touch and _header_layout.is_equal_approx(layout) \
+			and _header_date_font == date_font:
 		return
 	_header_touch = touch
 	_header_layout = layout
+	_header_date_font = date_font
 	for label: Label in _header_fonts:
 		var font := 18 if label == _mode_title and touch else _header_fonts[label]
-		label.add_theme_font_size_override("font_size", roundi(font * font_scale))
+		var font_size := roundi(font * font_scale)
+		if label == _time_caption:
+			font_size = maxi(font_size, date_font)
+		label.add_theme_font_size_override("font_size", font_size)
 	_mode_title.visible = not short
 	_player_one_streak.visible = not touch
 	_player_one_card.custom_minimum_size = Vector2(150 * font_scale, 0) if touch \

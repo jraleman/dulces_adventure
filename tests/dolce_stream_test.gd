@@ -11,6 +11,7 @@ const ChunkLibrary = preload("res://games/dolces_adventure/chunk_library.gd")
 const State = preload("res://games/dolces_adventure/run_state.gd")
 const Grid = preload("res://games/dolces_adventure/tile_grid.gd")
 const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
+const DailyRun = preload("res://games/dolces_adventure/daily_run.gd")
 
 const RUN_METRES := 1000.0
 const SEEDS: Array[int] = [0, 1, 7, 42, 2024, 99999, 123456, 987654]
@@ -24,6 +25,7 @@ func _init() -> void:
 
 func _run() -> void:
 	_test_same_seed_same_run()
+	_test_daily_utc()
 	_test_sequence_rules()
 	_test_every_run_is_fair()
 	_test_food_supply()
@@ -43,6 +45,26 @@ func _test_same_seed_same_run() -> void:
 	_expect(first[0] == ChunkLibrary.START["id"], "Every run starts in the front garden.")
 	_expect(LevelStream.strip(42, RUN_METRES) == LevelStream.strip(42, RUN_METRES),
 		"The same seed builds the same tiles.")
+
+
+func _test_daily_utc() -> void:
+	var midnight := Time.get_unix_time_from_datetime_string("2026-11-01T00:00:00")
+	var first := DailyRun.new(midnight)
+	var last := DailyRun.new(midnight + 86399)
+	var tomorrow := DailyRun.new(midnight + 86400)
+	_expect(first.utc_date == "2026-11-01" and last.utc_date == first.utc_date
+		and first.seed == last.seed and first.record_id == last.record_id,
+		"Every instant of one UTC day repeats the course and record section.")
+	_expect(LevelStream.strip(first.seed, RUN_METRES) == LevelStream.strip(last.seed, RUN_METRES),
+		"Morning and evening daily attempts build the same actual course.")
+	_expect(tomorrow.utc_date == "2026-11-02" and tomorrow.seed != first.seed
+		and tomorrow.record_id != first.record_id,
+		"UTC midnight changes both the daily course and its record section.")
+	_expect(LevelStream.sequence(tomorrow.seed, RUN_METRES)
+		!= LevelStream.sequence(first.seed, RUN_METRES),
+		"Neighbouring UTC dates produce different chunk sequences.")
+	_expect(first.utc_date == "2026-11-01" and first.seed == last.seed,
+		"Creating tomorrow's daily identity cannot relabel an existing run.")
 
 
 func _test_sequence_rules() -> void:

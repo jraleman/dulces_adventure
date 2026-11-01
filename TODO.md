@@ -8,10 +8,18 @@ tests pass. Each phase ends with an exit check.
 `§n` points at the matching section of `DESIGN.md`. Run commands from
 `godot-base/`. Framework rules from the root `AGENTS.md` still apply.
 
-**v1.0.0 Windows release candidate is built.** Implementation, all 13 game
-suites, all 15 framework suites, both release exports and packaged/native
-smoke checks pass on Godot 4.7.2. Human/device checks and commits below remain
-open; automated goal checks are not full playthroughs of later stages.
+**v1.0.0 Windows local release is prepared; gameplay is owner-accepted.**
+Implementation, all 13 game and 15 framework suites, all five full input-only
+stages, the 2.25 km endless run, exports and packaged/native smoke checks pass
+on Godot 4.7.2. On 2026-11-01 the owner reported "It plays nicely and all is
+good" and approved local finalization. Commits, tags, signing and publication
+are deferred. The detailed manual/device checks below have no supplied test
+matrix; do not treat general owner acceptance as evidence they were performed.
+
+**v2 phase 1 is implemented in source:** Daily UTC (§5.6), with UTC-midnight
+resets, unlimited Backyard attempts and separate daily bests. All 13 game
+and 15 framework suites pass on Godot 4.7.2. V1 binaries remain frozen;
+v2 has not been packaged or owner-accepted.
 
 ---
 
@@ -58,6 +66,13 @@ Don't start work that depends on an unanswered one.
 - [x] **Stage failure** — losing the last heart ends the attempt with no
       clear, as on an endless run (owner decision).
 - [x] **Stage length** — about 300 m (owner decision; 280–340 m, tested).
+- [x] **v1 gameplay acceptance / local release** (§13.8) — owner accepted
+      gameplay on 2026-11-01 and selected local v1 finalization.
+      No commits, tags, signing or publication; no new v2 mechanics.
+- [x] **First v2 feature** (§13.9) — Daily UTC, resetting at **UTC midnight**
+      with **unlimited attempts** from the Backyard. Separate daily bests;
+      existing assists/achievements stay available; a started run keeps its
+      date/seed through midnight.
 - [x] Fold every answer above into `DESIGN.md` (§1, §3, §4.5, §5.4, §6.3,
       §9.1, §10, §12, §13) so the design and this list agree.
 
@@ -340,6 +355,11 @@ on.
       and framework gates suites now pass on 4.7.2. Still to do: run
       Backyard → Night Market by hand (about 2.2 km) and check the unlocks
       on a fresh profile in the real menus.
+      *v1 automated check on 4.7.2:* seed 42 drives 2,250 m through normal
+      controls, passing every biome gate with three hearts and no damage
+      (148 burgers, 27 stomps). Actual input collisions then end the run
+      at 2,256 m; results earn all four reach achievements, unlock every
+      endless start from fresh progression, and save the real record.
 - [ ] Polish noted while building: the Market's food trucks and the Pier's
       umbrellas can feel frequent; the Street backdrop is busy. Tune
       `_roll` thresholds and backdrop density after playtests.
@@ -374,11 +394,13 @@ on.
       unlock their achievements in a throwaway profile. These suites also
       pass on 4.7.2. Still to do: clear all five by hand from a fresh profile
       and set target times from that.
-      *v1 release check on 4.7.2:* Stage 1 clears all 298 m through real
-      input actions (24 burgers). The real scene then checks every later
-      stage's goal, results, Treats and sequential unlocks from fresh
-      progression, starting near those goals. All five complete geometries
-      validate. Full human clears of Stages 2-5 remain unverified.
+      *v1 automated check on 4.7.2:* every full course clears through real
+      input actions from fresh progression: 298, 296, 294, 292 and 300 m,
+      with three hearts, no hits and no pit recoveries. Results, Treats,
+      actual saved clear times and sequential unlocks pass. The test-only
+      player predicts on deep copies; no teleporting, removed enemies,
+      injected hearts, course edits or validator changes. Full human clears
+      and human target times remain unverified.
 
 ## Milestone 7 — Shell features (§7.3, §9.1–§9.4)
 
@@ -411,8 +433,9 @@ on.
       captions; a take must cover ≥ 90 m, ≥ 5 burgers and a stomp. 27 s clip,
       poster now from 6.0 s. (See the recorder note under discrepancies.)
 - [x] `tests/dolce_scene_test.gd` (§10): loads under the shell, HUD and
-      outfit bind, pause, endless results, full input-only Stage 1, all five
-      stage goal/result/payout paths and fresh sequential unlocks.
+      outfit bind, pause, full input-only stages and Backyard-to-Market,
+      saved results/payouts and fresh endless/stage unlocks. Test-only
+      lookahead cannot mutate the live food, Lunchboxes, pests or body.
       Snapshots and restores every save it touches, including cached unlocks.
 - [x] Host `tests/store_test.gd` demanded a free default for every item kind,
       though `GameManifest.store_slots` documents `empty_title` as the
@@ -432,7 +455,8 @@ on.
       The saved tip can be accepted or dismissed across a restart.
 - [x] Automated accessibility sweep against §9.5: model poses and effects,
       caption coverage, accessible touch names/targets and responsive HUD.
-- [ ] Manual accessibility/playtesting on physical devices and speakers.
+- [ ] Detailed manual accessibility/playtesting evidence on physical
+      devices and speakers. Not inferred from the owner's general approval.
 - [x] `tests/dolce_controls_test.gd` — real routed touch events, double taps,
       handoffs, cancellation, drag, hidden/paused inputs and mouse emulation.
 - [x] `tests/dolce_view_test.gd` *(window)* — actual rendered pixels and
@@ -451,8 +475,10 @@ on.
       non-collection presets exclude Dolce; collection still includes it.
 - [x] Host `.gitmodules` and submodule registration use `dolces_adventure`.
 - [ ] Commit game changes, then the host changes and updated gitlink.
-      Pre-existing staged registration edits are preserved; this release
-      work remains unstaged and uncommitted.
+      The owner committed the original v1 game snapshot as `2840893`.
+      New playthrough QA and host release-integration changes remain
+      unstaged/uncommitted; pre-existing staged registration is preserved.
+      Deferred at the owner's request for local release finalization.
 - [x] Root `AGENTS.md`: games table, submodules, options files, test table,
       feature tags, blurb. Update `godot-base/README.md` if it lists games.
 - [x] Write the folder `README.md`: play, controls/assists, host launch,
@@ -473,19 +499,55 @@ on.
 - [x] Package the verified EXE/PCK pair:
       `build/dolces_adventure/DolcesAdventure-v1.0.0-windows-x86_64.zip`
       (~46 MB). Unsigned; signing/publication are separate release work.
+- [x] Finalize the local handoff: companion `RELEASE-NOTES.txt` and
+      `SHA256SUMS.txt` in the ignored release directory. The ZIP is unchanged;
+      both entries match the native files, v1 PE metadata is correct, and
+      final standalone native/exact-PCK smokes pass with isolated saves.
+- [x] Owner gameplay acceptance for v1. Local-only finalization is approved;
+      publication, signing, tags and commits are not part of this phase.
 - [x] **Test gate:** all framework suites + all game suites exit 0 with
       `--game=all`; window suites run without `--headless`.
       Godot 4.7.2: 13 game + 15 framework suites pass. This is not the
-      complete human QA: jump feel, physical devices/speakers, later-stage
-      full clears and the long endless run remain open. Export checks now pass.
+      detailed manual QA matrix: device/speaker measurements and human
+      full-course evidence are unreported. General owner gameplay acceptance
+      is recorded above. Full automated input courses and export checks pass.
+      Local finalization changes no production code or assets, so the verified
+      binaries/video stay valid.
 
 ---
 
-## After v1 (§12 v2 candidates)
+## V2 phase 1 — Daily UTC (§5.6)
+
+- [x] `daily_run.gd`: capture UTC date, stable epoch-day seed and
+      `daily_YYYY-MM-DD` record section once at round creation.
+- [x] Always-open **Daily UTC - Backyard** in the shared level picker,
+      reusing Backyard art and the unchanged endless stream/ramp.
+- [x] Preserve all v1 physics, authored chunks, the fairness validator,
+      fixed stage lists, assists, achievement keys and payout rules.
+- [x] Same-day Play Again repeats the course without an attempt cap.
+      Midnight leaves an active run/results/share on its starting date;
+      the next attempt uses the new date and separate bests.
+- [x] HUD/date, daily-distance results, best/seed stats and share payload.
+      The full UTC date stays visible at 14 physical pixels on small phones.
+      A replay seed override is explicitly ignored in Daily UTC.
+- [x] Focused stream/record tests cover UTC boundaries, deterministic
+      courses, daily maxima, older dates and unchanged v1 records.
+- [x] Real-scene daily retries and 2,257 m Backyard-to-Market run on
+      2026-11-01 / seed 020758; actual death, Treats, reach achievements with
+      Kind pits, preserved v1 bests and midnight result routing.
+- [x] **Test gate:** 13 game + 15 framework suites pass on Godot 4.7.2,
+      plus the real-window full scene with `--dolce-seed=999999` proving
+      daily replay protection. Date-readability and affected framework UI
+      tests pass. Lint's three existing diagnostics are unchanged.
+- [x] Document source versus the frozen v1 EXE/PCK/ZIP; do not overwrite
+      v1 artifacts, commit, tag, sign or publish.
+- [ ] Owner playtest/acceptance and a separately versioned v2 release.
+      Automated rendered phones are not physical-device measurements.
+
+## Remaining v2 candidates (§12; not in this phase)
 
 - [ ] Slopes (model + validator).
 - [ ] Hot-seat turns, P1/P2/P3, best distance wins (reuse Cube Trials'
       hand-off flow).
-- [ ] A daily seed.
 - [ ] Chase camera.
 - [ ] A light music bed through `AudioManager`.

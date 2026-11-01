@@ -7,6 +7,7 @@ extends SceneTree
 
 const Records = preload("res://games/dolces_adventure/run_records.gd")
 const Options = preload("res://games/dolces_adventure/dolces_adventure_options.gd")
+const DailyRun = preload("res://games/dolces_adventure/daily_run.gd")
 
 var _failures := PackedStringArray()
 var _path := "user://dolces_adventure_records_test_%d.cfg" % Time.get_ticks_usec()
@@ -21,6 +22,7 @@ func _run() -> void:
 	_test_empty()
 	_test_records_never_regress()
 	_test_merges_unknown_sections()
+	_test_daily_sections()
 	_test_damaged_file_is_left_alone()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_path))
 	_finish()
@@ -69,6 +71,33 @@ func _test_merges_unknown_sections() -> void:
 	_expect(int(after.get_value("night_market", "distance", 0)) == 999
 		and int(after.get_value(Options.START_BACKYARD, "best_time", 0)) == 42,
 		"Saving merges into the file instead of rebuilding it.")
+
+
+func _test_daily_sections() -> void:
+	var records := Records.new(_path)
+	var ordinary := records.best(Options.START_BACKYARD)
+	records.record(Options.STAGE_BACKYARD, {"distance": 298, "time_ms": 45000})
+	var stage := records.best(Options.STAGE_BACKYARD)
+	var midnight := Time.get_unix_time_from_datetime_string("2026-11-01T00:00:00")
+	var yesterday := DailyRun.new(midnight)
+	var today := DailyRun.new(midnight + 86400)
+	records.record(yesterday.record_id, {"distance": 200, "score": 6000, "burgers": 30})
+	records.record(today.record_id, {"distance": 90, "score": 3000, "burgers": 10})
+	records.record(today.record_id, {"distance": 120, "score": 2500, "burgers": 8})
+	var reloaded := Records.new(_path)
+	_expect(reloaded.best(today.record_id) == {
+		"distance": 120, "score": 3000, "burgers": 10, "time_ms": 0,
+	}, "Unlimited daily retries merge independent maxima without regressing them.")
+	_expect(reloaded.best(yesterday.record_id) == {
+		"distance": 200, "score": 6000, "burgers": 30, "time_ms": 0,
+	}, "Today's attempts do not overwrite an older daily best.")
+	_expect(reloaded.best(Options.START_BACKYARD) == ordinary
+		and reloaded.best(Options.STAGE_BACKYARD) == stage,
+		"Daily results preserve ordinary bests and fixed stage clear times.")
+	var daily_best := reloaded.best(today.record_id)
+	records.record(Options.START_BACKYARD, {"distance": 600})
+	_expect(Records.new(_path).best(today.record_id) == daily_best,
+		"An ordinary run's save also preserves the daily sections.")
 
 
 func _test_damaged_file_is_left_alone() -> void:

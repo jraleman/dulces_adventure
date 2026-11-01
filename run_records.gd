@@ -3,7 +3,8 @@ extends RefCounted
 ## Best runs, kept in `user://dolces_adventure.cfg` (DESIGN §4.5).
 ##
 ## One `ConfigFile` section per start point (`[backyard]`, `[park]`, …) and
-## per fixed stage (`[stage_backyard]`, …), each holding `distance`, `score`
+## per fixed stage (`[stage_backyard]`, …) and UTC date (`[daily_YYYY-MM-DD]`),
+## each holding `distance`, `score`
 ## and `burgers`, which only ever go up. A stage's section also keeps
 ## `time_ms`, its best clear time, which only ever goes down: an unfinished
 ## attempt never sets one. A save merges into the stored file rather than

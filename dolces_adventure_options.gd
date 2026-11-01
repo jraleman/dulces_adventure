@@ -116,6 +116,8 @@ const START_PARK := "park"
 const START_STREET := "street"
 const START_PIER := "pier"
 const START_MARKET := "market"
+## The UTC challenge always starts in the Backyard; bests use dated sections.
+const DAILY := "daily"
 ## Fixed stages: their level ids, and their sections in the best-runs file.
 const STAGE_BACKYARD := "stage_backyard"
 const STAGE_PARK := "stage_park"
@@ -126,8 +128,8 @@ const STAGE_MARKET := "stage_market"
 ## `tools/capture_art.gd`.
 const LEVEL_ART := "res://games/dolces_adventure/assets/levels/"
 
-## Start points and fixed stages for the shared level selector (DESIGN §5.4,
-## §5.5). Each later start point opens once a run has covered that far,
+## Start points, Daily UTC and fixed stages for the shared level selector
+## (DESIGN §5.4–§5.6). Each later start point opens once a run has covered that far,
 ## counted from wherever it started; each stage opens when the one before it
 ## is cleared.
 const LEVELS: Array[Dictionary] = [
@@ -158,6 +160,13 @@ const LEVELS: Array[Dictionary] = [
 		"description": "Start 2,200 m out, among food trucks and spitting hot sauce.",
 		"requires_achievement": REACHED_MARKET,
 		"locked_description": "Run 2,200 m in one run to start from the Night Market.",
+	},
+	{
+		"id": DAILY, "title": "Daily UTC - Backyard", "icon": LEVEL_ART + "backyard.png",
+		"description": (
+			"One endless course per UTC date, from the front door. "
+			+ "Unlimited retries, separate daily bests. Resets at UTC midnight."
+		),
 	},
 	{
 		"id": STAGE_BACKYARD, "title": "Stage 1 - Backyard", "icon": LEVEL_ART + "stage_backyard.png",

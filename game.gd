@@ -32,7 +32,7 @@ static func manifest() -> GameManifest:
 	# Best distance is progress, so the Saves screen keeps it with the rest.
 	game.save_files = [{
 		"path": Options.SAVE_PATH, "title": "Best runs",
-		"description": "Best distance, score and burgers from each start point, and stage times.",
+		"description": "Start-point and daily best distance, score and burgers, plus stage times.",
 	}]
 	game.tunables = Options.TUNABLES
 	game.control_bindings = Options.CONTROL_BINDINGS
@@ -56,7 +56,9 @@ static func manifest() -> GameManifest:
 		"solo_confirm_description": (
 			"Endless runs are a new course every time, scored by how far she gets: run 400, "
 			+ "900, 1,500 and 2,200 m to start further along. Stages are the same 300 m "
-			+ "every time, against the clock: clear one to open the next."
+			+ "every time, against the clock: clear one to open the next. "
+			+ "Daily UTC repeats one Backyard course all day, with unlimited retries "
+			+ "and separate bests. A new UTC date gets a new course."
 		),
 		"instructions_solo_summary": "Run right, jump the pits, bonk the pests and eat every burger.",
 		"instructions_headline": "SMALL DOG. BIG APPETITE.",
@@ -76,7 +78,11 @@ static func manifest() -> GameManifest:
 			+ "walk into it to kick it into the other pests.\n"
 			+ "Endless runs score %d points a metre, plus food and stomps, and get harder "
 			+ "as she goes, through the Park, Main Street, the Pier and the Night Market. "
-			+ "Stages are fixed and timed: the clock stops at the food truck."
+			+ "Stages are fixed and timed: the clock stops at the food truck.\n"
+			+ "Daily UTC starts in the Backyard on one course per UTC date, with "
+			+ "unlimited retries and separate daily bests. It uses your device's UTC "
+			+ "clock; a started run keeps its date through midnight. "
+			+ "Assists and achievements work in every mode."
 		) % State.DISTANCE_POINTS,
 		"instructions_demo_prompt": "GO, DOLCE!",
 		"instructions_player_one_controls": (
@@ -159,7 +165,7 @@ static func manifest() -> GameManifest:
 	game.credits = [
 		{"heading": "Dolce's Adventure", "lines": [
 			"Game design and development: DeskCanSaw Games",
-			"An endless run and five timed stages through one hungry dog's neighbourhood.",
+			"Endless and daily runs, plus five timed stages through one hungry dog's neighbourhood.",
 		]},
 		{"heading": "Art and sound", "lines": [
 			"Original procedural models: Dolce, her pests, her food and every biome.",

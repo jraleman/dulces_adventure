@@ -13,8 +13,8 @@ overrides anything here.
 
 Read `DESIGN.md` before changing mechanics, and `TODO.md` for what is built,
 what is next and which owner decisions are still open. The game is a
-side-scrolling endless run (plus one fixed stage per biome) for a small
-chihuahua mix: run, variable-height jump, stomp pests, eat burgers, go as far
+side-scrolling endless run (plus Daily UTC and one fixed stage per biome) for
+a small chihuahua mix: run, variable-height jump, stomp pests, eat burgers, go as far
 as you can. It copies Cube Trials' *structure*: a node-free model in a real 3D
 world inside an isolated `SubViewport`, under the shared 2D `GameShell`.
 
@@ -33,6 +33,7 @@ Only what exists so far. `DESIGN.md` §6 is the target layout.
 | `chunk_library.gd` | The legend, biomes, every biome's chunks and gate, `build()`, the validator |
 | `level_stream.gd` | Seeded chunk assembly: the live window, the ramp, breathers; stage mode |
 | `stages.gd` | The five fixed stages: chunk lists, lengths, food totals, `time_text()` |
+| `daily_run.gd` | Captured UTC date, stable epoch-day seed and dated best-record section |
 | `run_records.gd` | Best runs in `user://dolces_adventure.cfg`; merges, never regresses |
 | `run_controls.gd` | Keyboard, gamepad and touch buttons into model inputs; no autoloads |
 | `run_hud.gd` | Hearts, burgers and the FULL badge over the sky |
@@ -92,6 +93,16 @@ after changing Stage 1, the HUD or the tutorial captions, using the host's
 `achievements.cfg`, `settings.cfg` and `dolces_adventure.cfg` and put them
 back, including Settings' cached values and pending save timer. A new test
 that ends a run must do the same.
+
+The scene suite uses test-only live-physics lookahead for all five complete
+stages and a 2.25 km Backyard-to-Market run. Predictions deep-copy the model,
+grid and pests; never mutate live food, Lunchboxes or body state. Its seeded
+gameplay subclass is loaded at runtime after autoloads exist and only fixes
+the normal constructor's ordinary seed and injects a clock for daily tests.
+Daily UTC still uses the production seed mapping. The suite also plays daily
+retries and a 2.25 km run, checking midnight results and preserved v1 records.
+These helpers are excluded from exports;
+their clears are automated evidence, not human/device QA.
 
 `dolce_view_test.gd` requires a real window. Its optional
 `--dolce-view-captures=<absolute directory>` writes rendered layout screenshots.
@@ -155,6 +166,10 @@ every game in the catalog, so this one is covered as soon as `game.gd` exists.
 - A stage's clock is model time, so the game-speed assist never changes a
   clear time. A stage's chunk list is part of its records: editing one
   changes what every saved best time means.
+- Daily UTC captures date/seed/record section in `_reset_round_state()`.
+  Never read today's date again to label an active run, save results or
+  build its share payload. Retries are unlimited; ordinary/stage and older
+  daily sections must survive every save. Keep the v1 release artifacts frozen.
 
 ## Accessibility
 

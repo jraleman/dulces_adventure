@@ -229,6 +229,10 @@ merges into the stored file, so a build that doesn't know a section never
 deletes it. Stage sections (`[stage_backyard]`, etc.) also hold `time_ms`:
 only a clear sets it, and a best time only goes down.
 
+Daily UTC runs (§5.6) use separate `[daily_YYYY-MM-DD]` sections with the same
+distance, score and burger maxima. Ordinary start/stage sections never change
+because a daily run ended; historical daily sections are preserved by the merge.
+
 ### 4.6 Auto-run assist
 
 Tunable *Auto-run*, default **off**. A constants-only options file cannot pick
@@ -390,6 +394,36 @@ Owner decisions, recorded in `TODO.md`:
   `dolces_adventure_cleared_<biome>` (permanent keys), which opens Stage N+1
   in the shared level selector.
 
+### 5.6 Daily UTC runs (first v2 feature)
+
+Owner-approved scope: **UTC midnight and unlimited attempts**.
+
+- **Daily UTC - Backyard** is an always-open entry in the existing level
+  selector (`daily`); it uses the existing Backyard still and starts at the
+  normal front-door spawn. No separate menu or new achievement gate.
+- When a round is created, capture the system Unix timestamp once. The UTC
+  date and its seed stay with that run through pause, midnight and results.
+  Play Again creates a fresh round: the same date repeats the same course,
+  and a new UTC date gets its own course and bests.
+- The seed is the positive modulo of whole UTC days since the Unix epoch,
+  `floor(unix_seconds / 86400) mod 1000000`. This numeric rule is stable
+  across machines and avoids platform/version-dependent string hashing.
+  Daily runs ignore `--dolce-seed` with an explicit warning; normal endless
+  replay overrides and fixed stage layouts retain their v1 behavior.
+- The live `level_stream.gd` builds the ordinary seeded endless course from
+  the Backyard. Physics, chunks, the fairness validator, difficulty ramp,
+  food, pests, three hearts and the Full buffer are unchanged.
+- Distance remains the headline. The HUD shows the captured UTC date;
+  results/stats also show the course seed and daily best, and the existing
+  share payload carries the date/seed. Save maxima under `daily_YYYY-MM-DD`
+  in the existing best-runs file.
+  Historical dates, ordinary endless bests and stage clear times are kept.
+- Auto-run, Kind pits, Game speed and all achievements/Treats remain
+  available; there is no retry cap, assist restriction, online leaderboard
+  or clock-validation service. The date comes from the device's UTC clock.
+- The accepted **v1.0.0 ZIP/EXE/PCK are frozen**. Do not re-export v2 source
+  into that v1 package or regenerate unchanged v1 stills/tutorial media.
+
 ---
 
 ## 6. Architecture
@@ -406,6 +440,7 @@ pests.gd                    # node-free enemy behaviours
 chunk_library.gd            # authored chunk grids, legend, validator
 level_stream.gd             # seeded assembly, ramp, safe-ground, live tile window; stage mode
 stages.gd                   # the five fixed stages: chunk lists, lengths, time format
+daily_run.gd                # node-free UTC date, deterministic seed and daily record key
 world_view.gd               # isolated SubViewport, orthographic camera, one baked mesh per chunk
 run_controls.gd             # keyboard, gamepad, multitouch
 run_hud.gd                  # hearts, distance, burgers, score, pause
@@ -686,7 +721,7 @@ Headless unless noted; each a standalone `SceneTree` script that exits 0.
 | `dolce_model_test.gd` | Procedural rig, poses, reactions, Full and reduced motion |
 | `dolce_audio_test.gd` | Synthesized cues and captions for meaningful events |
 | `dolce_controls_test.gd` | Routed touch events, genuine sprint taps, handoffs, cancellation, dragging, pause and emulated mouse twins |
-| `dolce_scene_test.gd` | Gameplay under the shell, HUD/outfit, pause, results/payout/unlocks, Auto-run tip acceptance, dismissal and restart persistence |
+| `dolce_scene_test.gd` | Full input-only stages and Backyard-to-Market run; fresh unlocks, saved results/payouts, HUD/outfit, pause, Auto-run tip and lookahead isolation |
 | `dolce_view_test.gd` *(window)* | Rendered pixels and whole-body bounds; portrait/landscape phones, tablet, ultrawide, long scores, large UI, Full, captions, tip docking and airborne poses |
 
 The framework suites (`game_shell_test`, `game_options_test`,
@@ -699,6 +734,17 @@ Run suites serially. Isolate `user://` with a scratch `APPDATA` on Windows or
 and Settings' cache, stopping its pending save timer before restoring.
 Load shell gameplay scenes at runtime after autoloads exist, not by directly
 preloading `gameplay.gd` in a `SceneTree` test.
+
+The scene suite's test-only player searches collision trajectories on deep
+copies of the live `run_state`, grid and pests, then presses normal actions.
+It clears all five complete stage courses and drives seed 42 through every
+biome gate to 2,250 m without damage. Untimed hops then lose the last heart
+through real collisions, exercising the endless result and unlocks.
+The runtime-loaded `tests/playthrough_gameplay.gd` only fixes the normal
+constructor's seed. No run is positioned near a goal, no enemies are removed
+and no hearts are injected. Both helpers stay under the excluded `tests/`
+folder; they are not a shipped assist. Predictions must leave live food,
+Lunchboxes, pests, body state and events untouched.
 
 ---
 
@@ -716,8 +762,9 @@ These are the only edits outside `games/dolces_adventure/`:
       x86_64 release with the feature tag, external PCK, and other games,
       tests and development tools excluded. Existing non-collection presets
       exclude Dolce; the collection includes it.
-- [ ] `.gitmodules` + gitlink once the folder has a remote (two commits: one
-      in the game repo, one in `dcs_games`).
+- [ ] Commit registration and the updated gitlink (one game commit, then one
+      in `dcs_games`). Deferred for local release finalization; no Git writes
+      were requested.
 - [x] Root `AGENTS.md`: games table, submodule list, options-file list, test
       table, feature-tag list, and the per-game blurb.
 - [x] `godot-base/README.md`: launch, game, export and test documentation.
@@ -737,9 +784,22 @@ rendered checks against their exact PCKs, and native EXE boots pass.
 Standalone has only Dolce and the approved save directory; the collection
 keeps all ten games and its existing profile/version. The unsigned EXE/PCK
 pair is packaged in `build/dolces_adventure/DolcesAdventure-v1.0.0-windows-x86_64.zip`.
-Stage 1 is cleared input-only; later scene tests verify goal/results/gates
-near the finish, not full drives. Human feel, physical-device/speaker checks,
-full later-stage clears and publication remain separate from this gate.
+All five stages now clear input-only with three hearts and no damage, and
+a 2.25 km Backyard-to-Market input run checks fresh endless unlocks, records
+and payouts. Human feel, physical-device/speaker checks, human full-course
+playthroughs and publication remain separate from this gate. The production
+game and assets have not changed in this QA pass, so the verified release
+binaries and tutorial do not need regeneration.
+
+**v1.0.0 local release acceptance (2026-11-01):** the owner reported
+"It plays nicely and all is good" and selected local v1 finalization, not v2.
+The unchanged standalone ZIP has companion `RELEASE-NOTES.txt` and
+`SHA256SUMS.txt` under ignored `build/dolces_adventure/` output. Its entries
+match the verified EXE/PCK; native title/version, a responsive Windows boot,
+and the exact-PCK catalog, footer, save path, media and gameplay checks pass.
+The release remains unsigned, untagged and unpublished. Commits are left
+alone. General owner acceptance does not supply a detailed manual full-course,
+physical-device or speaker test matrix; do not mark those tests as performed.
 
 ---
 
@@ -762,8 +822,12 @@ full later-stage clears and publication remain separate from this gate.
 8. **Polish & integration.** Touch layouts, accessibility sweep, framework
    suites with `--game=all`, export preset, `AGENTS.md`/README updates.
 
-**v2 candidates:** slopes, hot-seat turns (P1/P2/P3, best distance wins —
-reuse Cube Trials' hand-off flow), a daily seed, chase camera, music bed.
+**v2 phase 1:** Daily UTC runs (§5.6), with unlimited retries and UTC-midnight
+resets. This is source development, not a replacement for the frozen v1
+release package.
+
+**Remaining v2 candidates:** slopes, hot-seat turns (P1/P2/P3, best distance
+wins — reuse Cube Trials' hand-off flow), chase camera, music bed.
 
 ---
 
@@ -782,6 +846,14 @@ reuse Cube Trials' hand-off flow), a daily seed, chase camera, music bed.
    including the apostrophe.
 7. **Gamepad rebinding** — answered: keep the current fixed gamepad controls
    for v1; keyboard action bindings remain rebindable.
+8. **v1 gameplay / release acceptance** — answered: the owner accepted
+   gameplay on 2026-11-01 and approved local v1 release finalization.
+   Leave commits, tags, signing and publication untouched. Record the
+   general playtest acceptance, not unreported device-specific measurements.
+9. **First v2 feature** — answered: Daily UTC runs (§5.6), resetting at
+   **UTC midnight** with **unlimited attempts** from the Backyard and
+   separate daily bests. Existing assists/achievements remain available;
+   each round keeps its captured date/seed through midnight.
 
 Other locked answers, also tracked in `TODO.md`: the heroine is Dolce, with
 new source/save names only and no legacy aliases; her rig uses procedural

@@ -67,6 +67,7 @@ func _run() -> void:
 	session.call("set_level", Options.START_BACKYARD)
 	var packed := load("res://games/dolces_adventure/gameplay.tscn") as PackedScene
 	_game = packed.instantiate()
+	_game.set_script(load("res://games/dolces_adventure/tests/playthrough_gameplay.gd"))
 	get_root().add_child(_game)
 	for _frame in 240:
 		await process_frame
@@ -123,6 +124,7 @@ func _run() -> void:
 		_expect(_view.get_global_rect().grow(1.0).encloses(body),
 			"Jump and fall stay on screen with large UI (velocity %.0f)." % velocity)
 		_check_layout("large UI airborne %.0f" % velocity)
+	await _check_daily_layouts()
 	_game.queue_free()
 	await process_frame
 	_restore()
@@ -133,6 +135,32 @@ func _run() -> void:
 		for failure in _failures:
 			printerr(failure)
 		quit(1)
+
+
+func _check_daily_layouts() -> void:
+	_settings.call("set_value", "ui/scale", 1.0)
+	_settings.call("set_value", "accessibility/reduced_motion", true)
+	get_root().get_node("GameSession").call("set_level", Options.DAILY)
+	_game.call("_start_round")
+	_game.set("_round_active", false)
+	_state = _game.get("_state") as State
+	for title: String in ["desktop", "small portrait phone", "small landscape phone"]:
+		await _resize(WINDOWS[title])
+		_controls.visible = title != "desktop"
+		await _settle()
+		_view.present(0.0)
+		await _settle()
+		_check_layout("Daily UTC " + title)
+		var label := _game.get_node("%TimeCaption") as Label
+		_expect(label.text == "2026-11-01 UTC" and label.is_visible_in_tree(),
+			"%s: the captured daily date remains visible, including on a short phone." % title)
+		var width := label.get_theme_font("font").get_string_size(label.text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x
+		_expect(width <= label.size.x + 1.0,
+			"%s: the full daily date fits its HUD label without clipping." % title)
+		_expect(label.get_theme_font_size("font_size") * View.physical_scale(_game) >= 13.5,
+			"%s: the daily date retains at least 14 physical pixels of readable text." % title)
+		_capture("Daily UTC " + title)
 
 
 func _check_layout(title: String) -> void:
